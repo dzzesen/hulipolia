@@ -1,6 +1,5 @@
 import flet as ft
 
-# ─── Цвета ─────────────────────────────────
 BASE_COLOR = ft.Colors.BLUE_GREY_400
 HIGHLIGHT_COLOR = ft.Colors.BLUE_200
 
@@ -11,7 +10,6 @@ PAINT_COLORS = {
     "Жёлтый": ft.Colors.YELLOW_400,
 }
 
-# ─── Правая часть: конфигурация ────────────
 RIGHT_CONFIG = {
     "Золото":      {"count": 16, "arrows": [4, 8, 11, 14, 16]},
     "Нефть":       {"count": 16, "arrows": [4, 8, 12, 16]},
@@ -28,7 +26,19 @@ def main(page: ft.Page):
 
     selected_color = {"value": ft.Colors.RED_400}
 
-    # ─── Палитра цветов ─────────────────────
+    wife_money = {"value": 0}
+    husband_money = {"value": 0}
+
+    def apply_money(change_field, money_state, money_text):
+        try:
+            delta = int(change_field.value)
+            money_state["value"] += delta
+            money_text.value = str(money_state["value"])
+            change_field.value = ""
+            page.update()
+        except:
+            pass
+
     palette = ft.Row(spacing=10)
 
     def select_color(color):
@@ -52,7 +62,6 @@ def main(page: ft.Page):
             )
         )
 
-    # ─── Клик по клетке ──────────────────────
     def paint(e):
         cell = e.control
         if cell.bgcolor == selected_color["value"]:
@@ -63,7 +72,6 @@ def main(page: ft.Page):
             cell.bgcolor = selected_color["value"]
         cell.update()
 
-    # ─── Левая шкала ─────────────────────────
     def make_left_scale():
         cells = []
         for i in range(18):
@@ -81,19 +89,6 @@ def main(page: ft.Page):
             cells.append(c)
         return ft.Row(cells, spacing=4)
 
-    # ─── Правая клетка ───────────────────────
-    def make_right_cell(arrow=False):
-        return ft.Container(
-            content=ft.Text("↗" if arrow else "", color="white"),
-            width=32,
-            height=32,
-            alignment=ft.alignment.center,
-            bgcolor=BASE_COLOR,
-            border_radius=4,
-            on_click=paint,
-        )
-
-    # ─── Правая часть (2 строки) ─────────────
     def make_arrow_rows(count, arrows):
         rows = []
         for _ in range(2):
@@ -116,7 +111,6 @@ def main(page: ft.Page):
             rows.append(ft.Row(cells, spacing=4))
         return ft.Column(rows, spacing=4)
 
-    # ─── Сборка строк ────────────────────────
     rows = []
 
     for title, cfg in RIGHT_CONFIG.items():
@@ -134,9 +128,62 @@ def main(page: ft.Page):
             )
         )
 
+    wife_money_text = ft.Text("0", color="white", size=16)
+    wife_change = ft.TextField(label="+ / - деньги", width=150)
+
+    husband_money_text = ft.Text("0", color="white", size=16)
+    husband_change = ft.TextField(label="+ / - деньги", width=150)
+
     page.add(
         ft.Column(
             [
+                ft.Text("Счётчики игроков", color="white", size=18, weight="bold"),
+
+                ft.Row(
+                    [
+                        ft.Column(
+                            [
+                                ft.Text("Жена", color="white", weight="bold"),
+                                ft.TextField(label="Кредиты", width=150),
+                                ft.Row([ft.Text("Деньги:", color="white"), wife_money_text]),
+                                ft.Row(
+                                    [
+                                        wife_change,
+                                        ft.ElevatedButton(
+                                            "Применить",
+                                            on_click=lambda e: apply_money(
+                                                wife_change, wife_money, wife_money_text
+                                            ),
+                                        ),
+                                    ]
+                                ),
+                            ]
+                        ),
+
+                        ft.Column(
+                            [
+                                ft.Text("Муж", color="white", weight="bold"),
+                                ft.TextField(label="Кредиты", width=150),
+                                ft.Row([ft.Text("Деньги:", color="white"), husband_money_text]),
+                                ft.Row(
+                                    [
+                                        husband_change,
+                                        ft.ElevatedButton(
+                                            "Применить",
+                                            on_click=lambda e: apply_money(
+                                                husband_change, husband_money, husband_money_text
+                                            ),
+                                        ),
+                                    ]
+                                ),
+                            ]
+                        ),
+                    ],
+                    spacing=40,
+                ),
+
+                ft.Divider(color="white"),
+
                 ft.Text("Выбери цвет:", color="white"),
                 palette,
                 ft.Divider(color="white"),
