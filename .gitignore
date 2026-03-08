@@ -1,2 +1,5 @@
-.venv/
+target/
+dist/
+.DS_Store
 storage/
+__pycache__/

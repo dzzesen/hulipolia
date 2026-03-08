@@ -1,0 +1,322 @@
+use dioxus::prelude::*;
+
+const BASE_COLOR: &str = "#78909C";
+const HIGHLIGHT_COLOR: &str = "#90CAF9";
+
+const PAINT_COLORS: [(&str, &str); 5] = [
+    ("Red", "#EF5350"),
+    ("Blue", "#42A5F5"),
+    ("Green", "#66BB6A"),
+    ("Yellow", "#FFEE58"),
+    ("Purple", "#AB47BC"),
+];
+
+struct MarketConfig {
+    title: &'static str,
+    right_count: usize,
+    arrows: &'static [usize],
+    default_purple_cells: &'static [usize],
+}
+
+const MARKET_CONFIGS: [MarketConfig; 6] = [
+    MarketConfig {
+        title: "Gold",
+        right_count: 16,
+        arrows: &[4, 8, 11, 14, 16],
+        default_purple_cells: &[6, 7],
+    },
+    MarketConfig {
+        title: "Oil",
+        right_count: 16,
+        arrows: &[4, 8, 12, 16],
+        default_purple_cells: &[7, 8],
+    },
+    MarketConfig {
+        title: "Nasdaq",
+        right_count: 15,
+        arrows: &[3, 6, 9, 12, 15],
+        default_purple_cells: &[8, 9],
+    },
+    MarketConfig {
+        title: "Dow Jones",
+        right_count: 14,
+        arrows: &[4, 8, 11, 14],
+        default_purple_cells: &[8, 9],
+    },
+    MarketConfig {
+        title: "Bonds",
+        right_count: 15,
+        arrows: &[5, 10, 15],
+        default_purple_cells: &[9, 10],
+    },
+    MarketConfig {
+        title: "Country Stocks",
+        right_count: 12,
+        arrows: &[2, 5, 8, 12],
+        default_purple_cells: &[5, 6],
+    },
+];
+
+#[derive(Clone)]
+struct PlayerState {
+    money: i32,
+    credit: i32,
+    change_input: String,
+}
+
+impl PlayerState {
+    fn new() -> Self {
+        Self {
+            money: 20,
+            credit: 0,
+            change_input: String::new(),
+        }
+    }
+
+    fn apply_money(&mut self) {
+        if let Ok(delta) = self.change_input.trim().parse::<i32>() {
+            self.money += delta;
+            self.change_input.clear();
+        }
+    }
+
+    fn add_credit(&mut self) {
+        self.money += 10;
+        self.credit += 1;
+    }
+
+    fn subtract_credit(&mut self) {
+        if self.money >= 10 && self.credit > 0 {
+            self.money -= 10;
+            self.credit -= 1;
+        }
+    }
+}
+
+#[derive(Clone)]
+struct CellState {
+    label: String,
+    is_highlight: bool,
+    color: String,
+    is_arrow: bool,
+}
+
+impl CellState {
+    fn paint(&mut self, selected_color: &str) {
+        if self.color == selected_color {
+            self.color = if self.is_highlight {
+                HIGHLIGHT_COLOR.to_string()
+            } else {
+                BASE_COLOR.to_string()
+            };
+        } else {
+            self.color = selected_color.to_string();
+        }
+    }
+}
+
+#[derive(Clone)]
+struct MarketState {
+    title: &'static str,
+    left_cells: Vec<CellState>,
+    upper_cells: Vec<CellState>,
+    lower_cells: Vec<CellState>,
+}
+
+fn main() {
+    launch(App);
+}
+
+#[component]
+fn App() -> Element {
+    let mut wife = use_signal(PlayerState::new);
+    let mut husband = use_signal(PlayerState::new);
+    let mut selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
+    let mut markets = use_signal(build_markets);
+
+    rsx! {
+        style { {include_str!("../assets/main.css")} }
+
+        div { class: "app",
+            div { class: "players",
+                PlayerPanel {
+                    title: "Wife",
+                    state: wife,
+                }
+                PlayerPanel {
+                    title: "Husband",
+                    state: husband,
+                }
+            }
+
+            hr { class: "divider" }
+            p { class: "label", "Choose color:" }
+
+            div { class: "palette",
+                for (_, color) in PAINT_COLORS {
+                    button {
+                        class: if selected_color() == color { "palette-item selected" } else { "palette-item" },
+                        style: "background-color: {color};",
+                        onclick: move |_| selected_color.set(color.to_string()),
+                    }
+                }
+            }
+
+            hr { class: "divider" }
+
+            for market_idx in 0..markets().len() {
+                div { class: "market-row",
+                    div { class: "left-scale",
+                        for cell_idx in 0..markets()[market_idx].left_cells.len() {
+                            button {
+                                class: "cell",
+                                style: "background-color: {markets()[market_idx].left_cells[cell_idx].color};",
+                                onclick: move |_| {
+                                    let current = selected_color();
+                                    markets.with_mut(|m| {
+                                        m[market_idx].left_cells[cell_idx].paint(&current);
+                                    });
+                                },
+                                "{markets()[market_idx].left_cells[cell_idx].label}"
+                            }
+                        }
+                    }
+
+                    div { class: "market-title", "{markets()[market_idx].title}" }
+
+                    div { class: "arrow-rows",
+                        div { class: "arrow-row",
+                            for cell_idx in 0..markets()[market_idx].upper_cells.len() {
+                                button {
+                                    class: if markets()[market_idx].upper_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                    style: "background-color: {markets()[market_idx].upper_cells[cell_idx].color};",
+                                    onclick: move |_| {
+                                        let current = selected_color();
+                                        markets.with_mut(|m| {
+                                            m[market_idx].upper_cells[cell_idx].paint(&current);
+                                        });
+                                    },
+                                    "{markets()[market_idx].upper_cells[cell_idx].label}"
+                                }
+                            }
+                        }
+
+                        div { class: "arrow-row",
+                            for cell_idx in 0..markets()[market_idx].lower_cells.len() {
+                                button {
+                                    class: if markets()[market_idx].lower_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                    style: "background-color: {markets()[market_idx].lower_cells[cell_idx].color};",
+                                    onclick: move |_| {
+                                        let current = selected_color();
+                                        markets.with_mut(|m| {
+                                            m[market_idx].lower_cells[cell_idx].paint(&current);
+                                        });
+                                    },
+                                    "{markets()[market_idx].lower_cells[cell_idx].label}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn PlayerPanel(title: &'static str, state: Signal<PlayerState>) -> Element {
+    rsx! {
+        div { class: "player-panel",
+            h2 { class: "player-title", "{title}" }
+
+            div { class: "player-row",
+                span { "Credit:" }
+                span { "{state().credit}" }
+                button {
+                    class: "control-btn",
+                    onclick: move |_| state.with_mut(PlayerState::subtract_credit),
+                    "-"
+                }
+                button {
+                    class: "control-btn",
+                    onclick: move |_| state.with_mut(PlayerState::add_credit),
+                    "+"
+                }
+            }
+
+            div { class: "player-row",
+                span { "Money:" }
+                span { "{state().money}" }
+            }
+
+            div { class: "player-row",
+                input {
+                    class: "money-input",
+                    placeholder: "+ / - money",
+                    value: "{state().change_input}",
+                    oninput: move |evt| {
+                        let value = evt.value();
+                        state.with_mut(|s| s.change_input = value);
+                    }
+                }
+                button {
+                    class: "control-btn apply-btn",
+                    onclick: move |_| state.with_mut(PlayerState::apply_money),
+                    "Apply"
+                }
+            }
+        }
+    }
+}
+
+fn build_markets() -> Vec<MarketState> {
+    MARKET_CONFIGS
+        .iter()
+        .map(|cfg| {
+            let left_cells = (0..18)
+                .map(|i| {
+                    let is_highlight = matches!(i, 0 | 1 | 2 | 3 | 16 | 17);
+                    let color = if cfg.default_purple_cells.contains(&i) {
+                        "#AB47BC"
+                    } else if is_highlight {
+                        HIGHLIGHT_COLOR
+                    } else {
+                        BASE_COLOR
+                    };
+
+                    CellState {
+                        label: i.to_string(),
+                        is_highlight,
+                        color: color.to_string(),
+                        is_arrow: false,
+                    }
+                })
+                .collect();
+
+            let upper_cells = build_arrow_row(cfg.right_count, cfg.arrows, "↗");
+            let lower_cells = build_arrow_row(cfg.right_count, cfg.arrows, "↘");
+
+            MarketState {
+                title: cfg.title,
+                left_cells,
+                upper_cells,
+                lower_cells,
+            }
+        })
+        .collect()
+}
+
+fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<CellState> {
+    (1..=count)
+        .map(|i| CellState {
+            label: if arrows.contains(&i) {
+                arrow_char.to_string()
+            } else {
+                String::new()
+            },
+            is_highlight: false,
+            color: BASE_COLOR.to_string(),
+            is_arrow: arrows.contains(&i),
+        })
+        .collect()
+}

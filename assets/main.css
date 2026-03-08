@@ -1,0 +1,151 @@
+:root {
+  --bg: #000000;
+  --text: #ffffff;
+  --base-cell: #78909c;
+  --highlight-cell: #90caf9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  padding: 18px;
+  min-height: 100vh;
+  overflow: auto;
+}
+
+.players {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.player-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.player-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.money-input {
+  width: 150px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid #7f7f7f;
+  padding: 0 10px;
+  background: #111111;
+  color: var(--text);
+}
+
+.control-btn {
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.apply-btn {
+  min-width: 74px;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--text);
+  margin: 14px 0;
+}
+
+.label {
+  margin: 0 0 8px;
+}
+
+.palette {
+  display: flex;
+  gap: 10px;
+}
+
+.palette-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: 3px solid transparent;
+  cursor: pointer;
+}
+
+.palette-item.selected {
+  border-color: #ffffff;
+}
+
+.market-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.left-scale,
+.arrow-row {
+  display: flex;
+  gap: 4px;
+}
+
+.arrow-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.market-title {
+  width: 160px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 16px;
+}
+
+.arrow-gap {
+  margin-right: 10px;
+}
+
+@media (max-width: 1024px) {
+  .market-row {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .market-title {
+    width: auto;
+    line-height: 1.2;
+  }
+}
