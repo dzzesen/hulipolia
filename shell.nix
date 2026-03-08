@@ -7,23 +7,29 @@ pkgs.mkShell {
     nixd
     nil
     nixfmt-rfc-style
-    
-    python313
-    uv
+
+    rustup
+    pkg-config
+    openssl
+    wasm-bindgen-cli
+    binaryen
   ];
 
   shellHook = ''
-    if [ ! -d ".venv" ]; then
-      echo "exec -> uv venv .venv"
-      uv venv .venv
-    fi
+    export RUSTUP_TOOLCHAIN=stable
+    export PATH="$HOME/.cargo/bin:$PATH"
 
-    echo "exec -> source .venv/bin/activate"
-    source .venv/bin/activate
-    
-    echo "exec -> uv pip install -r requirements.txt"
-    uv pip install -r requirements.txt
+    echo "exec -> rustup toolchain install stable"
+    rustup toolchain install stable
 
-    echo "🚀 Flet Dev Environment Loaded"
+    echo "exec -> rustup default stable"
+    rustup default stable
+
+    echo "exec -> rustup target add wasm32-unknown-unknown"
+    rustup target add wasm32-unknown-unknown
+
+    echo "Rust + Dioxus web environment loaded"
+    echo "If needed once: cargo install dioxus-cli"
+    echo "Run app: dx serve --platform web"
   '';
 }

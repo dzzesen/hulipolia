@@ -1,0 +1,12 @@
+[application]
+name = "hulipoliya"
+default_platform = "web"
+out_dir = "dist"
+asset_dir = "assets"
+
+[web.app]
+title = "Hulipoliya"
+base_path = "/"
+
+[web.watcher]
+watch_path = ["src", "assets"]
