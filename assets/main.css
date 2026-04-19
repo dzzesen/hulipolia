@@ -128,8 +128,21 @@ body {
 
 .market-title {
   width: 160px;
+  min-width: 160px;
+  flex-shrink: 0;
+  height: 68px;
   font-weight: 700;
-  line-height: 32px;
+  font-size: 15px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 .cell {
@@ -159,6 +172,9 @@ body {
 
   .market-title {
     width: auto;
+    min-width: 80px;
+    height: auto;
+    min-height: 48px;
     line-height: 1.2;
   }
 }

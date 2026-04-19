@@ -13,6 +13,7 @@ const PAINT_COLORS: [(&str, &str); 5] = [
 
 struct MarketConfig {
     title: &'static str,
+    bg_color: &'static str,
     right_count: usize,
     arrows: &'static [usize],
     default_purple_cells: &'static [usize],
@@ -21,36 +22,42 @@ struct MarketConfig {
 const MARKET_CONFIGS: [MarketConfig; 6] = [
     MarketConfig {
         title: "Gold",
+        bg_color: "#f2ad3d",
         right_count: 16,
         arrows: &[4, 8, 11, 14, 16],
         default_purple_cells: &[6, 7],
     },
     MarketConfig {
         title: "Oil",
+        bg_color: "#141413",
         right_count: 16,
         arrows: &[4, 8, 12, 16],
         default_purple_cells: &[7, 8],
     },
     MarketConfig {
         title: "Nasdaq",
+        bg_color: "#3d57ad",
         right_count: 15,
         arrows: &[3, 6, 9, 12, 15],
         default_purple_cells: &[8, 9],
     },
     MarketConfig {
         title: "Dow Jones",
+        bg_color: "#6dcfcb",
         right_count: 14,
         arrows: &[4, 8, 11, 14],
         default_purple_cells: &[8, 9],
     },
     MarketConfig {
         title: "Bonds",
+        bg_color: "#62b85e",
         right_count: 15,
         arrows: &[5, 10, 15],
         default_purple_cells: &[9, 10],
     },
     MarketConfig {
         title: "Country Stocks",
+        bg_color: "#d92121",
         right_count: 12,
         arrows: &[2, 5, 8, 12],
         default_purple_cells: &[5, 6],
@@ -120,6 +127,7 @@ impl CellState {
 #[derive(Clone)]
 struct MarketState {
     title: &'static str,
+    bg_color: &'static str,
     left_cells: Vec<CellState>,
     upper_cells: Vec<CellState>,
     lower_cells: Vec<CellState>,
@@ -182,7 +190,11 @@ fn App() -> Element {
                         }
                     }
 
-                    div { class: "market-title", "{markets()[market_idx].title}" }
+                    div {
+                        class: "market-title",
+                        style: "background-color: {markets()[market_idx].bg_color};",
+                        "{markets()[market_idx].title}"
+                    }
 
                     div { class: "arrow-rows",
                         div { class: "arrow-row",
@@ -305,6 +317,7 @@ fn build_markets() -> Vec<MarketState> {
 
             MarketState {
                 title: cfg.title,
+                bg_color: cfg.bg_color,
                 left_cells,
                 upper_cells,
                 lower_cells,
