@@ -143,7 +143,11 @@ fn App() -> Element {
     let player2 = use_signal(|| PlayerState::with_name("Player 2"));
     let player3 = use_signal(|| PlayerState::with_name("Player 3"));
     let player4 = use_signal(|| PlayerState::with_name("Player 4"));
-    let mut selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
+    let selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
+    let player_colors = use_signal(|| {
+        PAINT_COLORS.iter().map(|(_, c)| c.to_string()).collect::<Vec<_>>()
+    });
+    let drag_source: Signal<Option<usize>> = use_signal(|| None);
     let mut markets = use_signal(build_markets);
 
     rsx! {
@@ -151,23 +155,10 @@ fn App() -> Element {
 
         div { class: "app",
             div { class: "players",
-                PlayerPanel { state: player1 }
-                PlayerPanel { state: player2 }
-                PlayerPanel { state: player3 }
-                PlayerPanel { state: player4 }
-            }
-
-            hr { class: "divider" }
-            p { class: "label", "Choose color:" }
-
-            div { class: "palette",
-                for (_, color) in PAINT_COLORS {
-                    button {
-                        class: if selected_color() == color { "palette-item selected" } else { "palette-item" },
-                        style: "background-color: {color};",
-                        onclick: move |_| selected_color.set(color.to_string()),
-                    }
-                }
+                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color }
+                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color }
+                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color }
+                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color }
             }
 
             hr { class: "divider" }
@@ -262,7 +253,13 @@ fn App() -> Element {
 }
 
 #[component]
-fn PlayerPanel(state: Signal<PlayerState>) -> Element {
+fn PlayerPanel(
+    state: Signal<PlayerState>,
+    player_idx: usize,
+    mut player_colors: Signal<Vec<String>>,
+    mut drag_source: Signal<Option<usize>>,
+    mut selected_color: Signal<String>,
+) -> Element {
     rsx! {
         div { class: "player-panel",
             input {
@@ -309,6 +306,24 @@ fn PlayerPanel(state: Signal<PlayerState>) -> Element {
                     onclick: move |_| state.with_mut(PlayerState::apply_money),
                     "Apply"
                 }
+            }
+
+            button {
+                class: if selected_color() == player_colors()[player_idx] { "color-pick-btn selected" } else { "color-pick-btn" },
+                style: "background-color: {player_colors()[player_idx]}; cursor: grab;",
+                draggable: true,
+                onclick: move |_| selected_color.set(player_colors()[player_idx].clone()),
+                ondragstart: move |_| drag_source.set(Some(player_idx)),
+                ondragover: move |evt| evt.prevent_default(),
+                ondrop: move |evt| {
+                    evt.prevent_default();
+                    if let Some(src) = drag_source() {
+                        if src != player_idx {
+                            player_colors.with_mut(|colors| colors.swap(src, player_idx));
+                        }
+                        drag_source.set(None);
+                    }
+                },
             }
         }
     }
