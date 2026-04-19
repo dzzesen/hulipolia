@@ -155,10 +155,10 @@ fn App() -> Element {
 
         div { class: "app",
             div { class: "players",
-                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color }
-                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color }
-                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color }
-                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color }
+                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color, markets }
+                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color, markets }
+                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color, markets }
+                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color, markets }
             }
 
             hr { class: "divider" }
@@ -259,7 +259,28 @@ fn PlayerPanel(
     mut player_colors: Signal<Vec<String>>,
     mut drag_source: Signal<Option<usize>>,
     mut selected_color: Signal<String>,
+    markets: Signal<Vec<MarketState>>,
 ) -> Element {
+    let capital = {
+        let s = state();
+        let color = player_colors()[player_idx].clone();
+        let mks = markets();
+        let base = s.money - 10 * s.credit;
+        let stock_sum: i32 = mks.iter().map(|market| {
+            let mut purple_indices: Vec<i32> = market.left_cells.iter()
+                .filter(|c| c.color == PURPLE_COLOR)
+                .filter_map(|c| c.label.parse::<i32>().ok())
+                .collect();
+            purple_indices.sort();
+            let sell_price = purple_indices.first().copied().unwrap_or(0);
+            let buy_price = purple_indices.last().copied().unwrap_or(0);
+            let held = market.upper_cells.iter().filter(|c| c.color == color).count() as i32;
+            let sold = market.lower_cells.iter().filter(|c| c.color == color).count() as i32;
+            held * sell_price - sold * buy_price
+        }).sum();
+        base + stock_sum
+    };
+
     rsx! {
         div { class: "player-panel",
             input {
@@ -289,6 +310,8 @@ fn PlayerPanel(
             div { class: "player-row",
                 span { "Money:" }
                 span { "{state().money}" }
+                span { "Capital:" }
+                span { "{capital}" }
             }
 
             div { class: "player-row",
