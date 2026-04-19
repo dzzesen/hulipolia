@@ -178,7 +178,7 @@ fn App() -> Element {
                         div { class: "left-scale",
                             for cell_idx in 0..markets()[market_idx].left_cells.len() {
                                 button {
-                                    class: "cell",
+                                    class: "price-cell",
                                     style: "background-color: {markets()[market_idx].left_cells[cell_idx].color};",
                                     onclick: move |_| {
                                         let current = selected_color();
