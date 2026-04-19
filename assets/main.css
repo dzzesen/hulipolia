@@ -58,6 +58,13 @@ body {
   gap: 10px;
 }
 
+.half-col {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 50%;
+}
+
 .money-input {
   width: 150px;
   height: 36px;

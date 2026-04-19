@@ -308,10 +308,14 @@ fn PlayerPanel(
             }
 
             div { class: "player-row",
-                span { "Money:" }
-                span { "{state().money}" }
-                span { "Capital:" }
-                span { "{capital}" }
+                div { class: "half-col",
+                    span { "Money:" }
+                    span { "{state().money}" }
+                }
+                div { class: "half-col",
+                    span { "Capital:" }
+                    span { "{capital}" }
+                }
             }
 
             div { class: "player-row",
