@@ -2,13 +2,13 @@ use dioxus::prelude::*;
 
 const BASE_COLOR: &str = "#78909C";
 const HIGHLIGHT_COLOR: &str = "#90CAF9";
+const PURPLE_COLOR: &str = "#AB47BC";
 
-const PAINT_COLORS: [(&str, &str); 5] = [
+const PAINT_COLORS: [(&str, &str); 4] = [
     ("Red", "#EF5350"),
     ("Blue", "#42A5F5"),
     ("Green", "#66BB6A"),
     ("Yellow", "#FFEE58"),
-    ("Purple", "#AB47BC"),
 ];
 
 struct MarketConfig {
@@ -174,26 +174,52 @@ fn App() -> Element {
 
             for market_idx in 0..markets().len() {
                 div { class: "market-row",
-                    div { class: "left-scale",
-                        for cell_idx in 0..markets()[market_idx].left_cells.len() {
-                            button {
-                                class: "cell",
-                                style: "background-color: {markets()[market_idx].left_cells[cell_idx].color};",
-                                onclick: move |_| {
-                                    let current = selected_color();
-                                    markets.with_mut(|m| {
-                                        m[market_idx].left_cells[cell_idx].paint(&current);
-                                    });
-                                },
-                                "{markets()[market_idx].left_cells[cell_idx].label}"
+                    div { class: "left-scale-wrapper",
+                        button {
+                            class: "shift-btn",
+                            onclick: move |_| {
+                                markets.with_mut(|m| {
+                                    shift_left_cells_left(&mut m[market_idx].left_cells);
+                                });
+                            },
+                            "◀"
+                        }
+                        div { class: "left-scale",
+                            for cell_idx in 0..markets()[market_idx].left_cells.len() {
+                                button {
+                                    class: "cell",
+                                    style: "background-color: {markets()[market_idx].left_cells[cell_idx].color};",
+                                    onclick: move |_| {
+                                        let current = selected_color();
+                                        markets.with_mut(|m| {
+                                            m[market_idx].left_cells[cell_idx].paint(&current);
+                                        });
+                                    },
+                                    "{markets()[market_idx].left_cells[cell_idx].label}"
+                                }
                             }
+                        }
+                        button {
+                            class: "shift-btn",
+                            onclick: move |_| {
+                                markets.with_mut(|m| {
+                                    shift_left_cells_right(&mut m[market_idx].left_cells);
+                                });
+                            },
+                            "▶"
                         }
                     }
 
                     div {
                         class: "market-title",
                         style: "background-color: {markets()[market_idx].bg_color};",
-                        "{markets()[market_idx].title}"
+                        if markets()[market_idx].title == "Country Stocks" {
+                            "Country"
+                            br {}
+                            "Stocks"
+                        } else {
+                            "{markets()[market_idx].title}"
+                        }
                     }
 
                     div { class: "arrow-rows",
@@ -296,7 +322,7 @@ fn build_markets() -> Vec<MarketState> {
                 .map(|i| {
                     let is_highlight = matches!(i, 0 | 1 | 2 | 3 | 16 | 17);
                     let color = if cfg.default_purple_cells.contains(&i) {
-                        "#AB47BC"
+                        PURPLE_COLOR
                     } else if is_highlight {
                         HIGHLIGHT_COLOR
                     } else {
@@ -324,6 +350,34 @@ fn build_markets() -> Vec<MarketState> {
             }
         })
         .collect()
+}
+
+fn shift_left_cells_right(cells: &mut Vec<CellState>) {
+    let n = cells.len();
+    if cells[n - 1].color == PURPLE_COLOR {
+        return;
+    }
+    for i in (0..n - 1).rev() {
+        if cells[i].color == PURPLE_COLOR {
+            let reset = if cells[i].is_highlight { HIGHLIGHT_COLOR } else { BASE_COLOR };
+            cells[i + 1].color = PURPLE_COLOR.to_string();
+            cells[i].color = reset.to_string();
+        }
+    }
+}
+
+fn shift_left_cells_left(cells: &mut Vec<CellState>) {
+    let n = cells.len();
+    if cells[0].color == PURPLE_COLOR {
+        return;
+    }
+    for i in 1..n {
+        if cells[i].color == PURPLE_COLOR {
+            let reset = if cells[i].is_highlight { HIGHLIGHT_COLOR } else { BASE_COLOR };
+            cells[i - 1].color = PURPLE_COLOR.to_string();
+            cells[i].color = reset.to_string();
+        }
+    }
 }
 
 fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<CellState> {
