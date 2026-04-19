@@ -131,6 +131,8 @@ fn main() {
 fn App() -> Element {
     let mut wife = use_signal(PlayerState::new);
     let mut husband = use_signal(PlayerState::new);
+    let mut dima = use_signal(PlayerState::new);
+    let mut sonya = use_signal(PlayerState::new);
     let mut selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
     let mut markets = use_signal(build_markets);
 
@@ -146,6 +148,14 @@ fn App() -> Element {
                 PlayerPanel {
                     title: "Husband",
                     state: husband,
+                }
+                PlayerPanel {
+                    title: "Dima",
+                    state: dima,
+                }
+                PlayerPanel {
+                    title: "Sonya",
+                    state: sonya,
                 }
             }
 
