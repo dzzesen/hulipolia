@@ -34,9 +34,22 @@ body {
   gap: 10px;
 }
 
-.player-title {
+.player-title-input {
   margin: 0;
   font-size: 18px;
+  font-weight: bold;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #aaa;
+  color: inherit;
+  width: 100%;
+  text-align: center;
+  outline: none;
+  padding: 2px 4px;
+}
+
+.player-title-input:focus {
+  border-bottom-color: #90CAF9;
 }
 
 .player-row {

@@ -59,14 +59,16 @@ const MARKET_CONFIGS: [MarketConfig; 6] = [
 
 #[derive(Clone)]
 struct PlayerState {
+    name: String,
     money: i32,
     credit: i32,
     change_input: String,
 }
 
 impl PlayerState {
-    fn new() -> Self {
+    fn with_name(name: &str) -> Self {
         Self {
+            name: name.to_string(),
             money: 20,
             credit: 0,
             change_input: String::new(),
@@ -129,10 +131,10 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let mut wife = use_signal(PlayerState::new);
-    let mut husband = use_signal(PlayerState::new);
-    let mut dima = use_signal(PlayerState::new);
-    let mut sonya = use_signal(PlayerState::new);
+    let player1 = use_signal(|| PlayerState::with_name("Player 1"));
+    let player2 = use_signal(|| PlayerState::with_name("Player 2"));
+    let player3 = use_signal(|| PlayerState::with_name("Player 3"));
+    let player4 = use_signal(|| PlayerState::with_name("Player 4"));
     let mut selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
     let mut markets = use_signal(build_markets);
 
@@ -141,22 +143,10 @@ fn App() -> Element {
 
         div { class: "app",
             div { class: "players",
-                PlayerPanel {
-                    title: "Wife",
-                    state: wife,
-                }
-                PlayerPanel {
-                    title: "Husband",
-                    state: husband,
-                }
-                PlayerPanel {
-                    title: "Dima",
-                    state: dima,
-                }
-                PlayerPanel {
-                    title: "Sonya",
-                    state: sonya,
-                }
+                PlayerPanel { state: player1 }
+                PlayerPanel { state: player2 }
+                PlayerPanel { state: player3 }
+                PlayerPanel { state: player4 }
             }
 
             hr { class: "divider" }
@@ -234,10 +224,17 @@ fn App() -> Element {
 }
 
 #[component]
-fn PlayerPanel(title: &'static str, state: Signal<PlayerState>) -> Element {
+fn PlayerPanel(state: Signal<PlayerState>) -> Element {
     rsx! {
         div { class: "player-panel",
-            h2 { class: "player-title", "{title}" }
+            input {
+                class: "player-title-input",
+                value: "{state().name}",
+                oninput: move |evt| {
+                    let value = evt.value();
+                    state.with_mut(|s| s.name = value);
+                }
+            }
 
             div { class: "player-row",
                 span { "Credit:" }
