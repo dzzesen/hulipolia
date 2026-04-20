@@ -34,6 +34,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  width: 250px;
 }
 
 .player-title-input {
@@ -68,7 +69,7 @@ body {
 }
 
 .money-input {
-  width: 150px;
+  width: 110px;
   height: 36px;
   border-radius: 6px;
   border: 1px solid #7f7f7f;
@@ -94,7 +95,8 @@ body {
 }
 
 .apply-btn {
-  min-width: 74px;
+  min-width: 58px;
+  padding: 0 10px;
 }
 
 .divider {

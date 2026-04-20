@@ -511,6 +511,14 @@ fn PlayerPanel(
                     },
                     "Apply"
                 }
+                button {
+                    class: "control-btn apply-btn",
+                    onclick: move |_| {
+                        on_push_history.call(());
+                        state.with_mut(PlayerState::apply_fee);
+                    },
+                    "Fee"
+                }
             }
 
             button {

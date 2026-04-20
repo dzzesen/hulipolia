@@ -26,6 +26,10 @@ impl PlayerState {
         }
     }
 
+    pub fn apply_fee(&mut self) {
+        self.money -= 1;
+    }
+
     pub fn add_credit(&mut self) {
         self.money += 10;
         self.credit += 1;
