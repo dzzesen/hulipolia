@@ -69,3 +69,12 @@ pub struct MarketState {
     pub holdings_cells: Vec<CellState>,
     pub shorts_cells: Vec<CellState>,
 }
+
+#[derive(Clone)]
+pub struct HistorySnapshot {
+    pub player1: PlayerState,
+    pub player2: PlayerState,
+    pub player3: PlayerState,
+    pub player4: PlayerState,
+    pub markets: Vec<MarketState>,
+}

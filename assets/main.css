@@ -229,16 +229,39 @@ body {
 
 .game-controls {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  flex-direction: row;
   align-items: flex-start;
   margin-left: auto;
   padding-left: 20px;
+  gap: 0;
+}
+
+.history-btn {
+  height: 36px;
+  width: 36px;
+  background-color: #546e7a;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-right: 6px;
+}
+
+.history-btn:hover:not(:disabled) {
+  background-color: #455a64;
+}
+
+.history-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .new-game-btn {
   height: 36px;
   padding: 0 20px;
+  margin-left: 10px;
   background-color: #4caf50;
   color: #ffffff;
   border: none;

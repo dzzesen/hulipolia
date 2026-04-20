@@ -1,4 +1,5 @@
 mod config;
+mod history;
 mod market;
 mod state;
 mod components;

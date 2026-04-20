@@ -1,7 +1,8 @@
 use dioxus::prelude::*;
 use crate::config::{PAINT_COLORS, PURPLE_COLOR};
+use crate::history::History;
 use crate::market::{build_markets, shift_prices_cells_left, shift_prices_cells_right};
-use crate::state::{MarketState, PlayerState};
+use crate::state::{HistorySnapshot, MarketState, PlayerState};
 use serde::{Deserialize, Serialize};
 
 
@@ -65,31 +66,14 @@ fn reset_game(
     mut player3: Signal<PlayerState>,
     mut player4: Signal<PlayerState>,
     mut markets: Signal<Vec<MarketState>>,
+    mut history: Signal<History>,
 ) {
-    // Reset player states (keep names and colors, reset money/credit/input)
-    player1.with_mut(|p| {
-        p.money = 20;
-        p.credit = 0;
-        p.change_input.clear();
-    });
-    player2.with_mut(|p| {
-        p.money = 20;
-        p.credit = 0;
-        p.change_input.clear();
-    });
-    player3.with_mut(|p| {
-        p.money = 20;
-        p.credit = 0;
-        p.change_input.clear();
-    });
-    player4.with_mut(|p| {
-        p.money = 20;
-        p.credit = 0;
-        p.change_input.clear();
-    });
-
-    // Reset markets to initial state
+    player1.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
+    player2.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
+    player3.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
+    player4.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
     markets.set(build_markets());
+    history.with_mut(|h| { h.undo_stack.clear(); h.redo_stack.clear(); });
 }
 
 #[component]
@@ -97,16 +81,16 @@ pub fn App() -> Element {
     // Load from localStorage or use defaults
     let initial_state = load_from_localstorage();
     
-    let player1 = use_signal(|| {
+    let mut player1 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player1.clone()).unwrap_or_else(|| PlayerState::with_name("Player 1"))
     });
-    let player2 = use_signal(|| {
+    let mut player2 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player2.clone()).unwrap_or_else(|| PlayerState::with_name("Player 2"))
     });
-    let player3 = use_signal(|| {
+    let mut player3 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player3.clone()).unwrap_or_else(|| PlayerState::with_name("Player 3"))
     });
-    let player4 = use_signal(|| {
+    let mut player4 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player4.clone()).unwrap_or_else(|| PlayerState::with_name("Player 4"))
     });
     let selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
@@ -119,7 +103,28 @@ pub fn App() -> Element {
         initial_state.map(|s| s.markets).unwrap_or_else(build_markets)
     });
     let mut show_modal = use_signal(|| false);
-    
+    let mut history = use_signal(|| History::new());
+
+    let make_snapshot = move || HistorySnapshot {
+        player1: player1(),
+        player2: player2(),
+        player3: player3(),
+        player4: player4(),
+        markets: markets(),
+    };
+
+    let mut push_history = move || {
+        history.with_mut(|h| h.push(make_snapshot()));
+    };
+
+    let mut restore_snapshot = move |s: HistorySnapshot| {
+        player1.set(s.player1);
+        player2.set(s.player2);
+        player3.set(s.player3);
+        player4.set(s.player4);
+        markets.set(s.markets);
+    };
+
     // Effect to save state whenever it changes
     use_effect(move || {
         save_to_localstorage(
@@ -139,7 +144,7 @@ pub fn App() -> Element {
             ConfirmModal {
                 show_modal,
                 on_confirm: move |_| {
-                    reset_game(player1, player2, player3, player4, markets);
+                    reset_game(player1, player2, player3, player4, markets, history);
                     clear_localstorage();
                     show_modal.set(false);
                 },
@@ -148,11 +153,22 @@ pub fn App() -> Element {
 
         div { class: "app",
             div { class: "players",
-                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color, markets }
-                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color, markets }
-                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color, markets }
-                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color, markets }
-                GameControls { show_modal }
+                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                GameControls {
+                    show_modal,
+                    history,
+                    on_undo: move |_| {
+                        let snap = history.with_mut(|h| h.undo(make_snapshot()));
+                        if let Some(s) = snap { restore_snapshot(s); }
+                    },
+                    on_redo: move |_| {
+                        let snap = history.with_mut(|h| h.redo(make_snapshot()));
+                        if let Some(s) = snap { restore_snapshot(s); }
+                    },
+                }
             }
 
             hr { class: "divider" }
@@ -163,6 +179,7 @@ pub fn App() -> Element {
                         button {
                             class: "shift-btn",
                             onclick: move |_| {
+                                push_history();
                                 markets.with_mut(|m| {
                                     shift_prices_cells_left(&mut m[market_idx].prices_cells);
                                 });
@@ -187,6 +204,7 @@ pub fn App() -> Element {
                         button {
                             class: "shift-btn",
                             onclick: move |_| {
+                                push_history();
                                 markets.with_mut(|m| {
                                     shift_prices_cells_right(&mut m[market_idx].prices_cells);
                                 });
@@ -214,6 +232,7 @@ pub fn App() -> Element {
                                     class: if markets()[market_idx].holdings_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
                                     style: "background-color: {markets()[market_idx].holdings_cells[cell_idx].color};",
                                     onclick: move |_| {
+                                        push_history();
                                         let current = selected_color();
                                         markets.with_mut(|m| {
                                             m[market_idx].holdings_cells[cell_idx].paint(&current);
@@ -230,6 +249,7 @@ pub fn App() -> Element {
                                     class: if markets()[market_idx].shorts_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
                                     style: "background-color: {markets()[market_idx].shorts_cells[cell_idx].color};",
                                     onclick: move |_| {
+                                        push_history();
                                         let current = selected_color();
                                         markets.with_mut(|m| {
                                             m[market_idx].shorts_cells[cell_idx].paint(&current);
@@ -247,9 +267,26 @@ pub fn App() -> Element {
 }
 
 #[component]
-fn GameControls(show_modal: Signal<bool>) -> Element {
+fn GameControls(
+    show_modal: Signal<bool>,
+    history: Signal<History>,
+    on_undo: EventHandler<()>,
+    on_redo: EventHandler<()>,
+) -> Element {
     rsx! {
         div { class: "game-controls",
+            button {
+                class: "history-btn",
+                disabled: !history().can_undo(),
+                onclick: move |_| on_undo.call(()),
+                "◀"
+            }
+            button {
+                class: "history-btn",
+                disabled: !history().can_redo(),
+                onclick: move |_| on_redo.call(()),
+                "▶"
+            }
             button {
                 class: "new-game-btn",
                 onclick: move |_| show_modal.set(true),
@@ -293,6 +330,7 @@ fn PlayerPanel(
     mut drag_source: Signal<Option<usize>>,
     mut selected_color: Signal<String>,
     markets: Signal<Vec<MarketState>>,
+    on_push_history: EventHandler<()>,
 ) -> Element {
     let capital = {
         let s = state();
@@ -330,12 +368,18 @@ fn PlayerPanel(
                 span { "{state().credit}" }
                 button {
                     class: "control-btn",
-                    onclick: move |_| state.with_mut(PlayerState::subtract_credit),
+                    onclick: move |_| {
+                        on_push_history.call(());
+                        state.with_mut(PlayerState::subtract_credit);
+                    },
                     "-"
                 }
                 button {
                     class: "control-btn",
-                    onclick: move |_| state.with_mut(PlayerState::add_credit),
+                    onclick: move |_| {
+                        on_push_history.call(());
+                        state.with_mut(PlayerState::add_credit);
+                    },
                     "+"
                 }
             }
@@ -363,7 +407,12 @@ fn PlayerPanel(
                 }
                 button {
                     class: "control-btn apply-btn",
-                    onclick: move |_| state.with_mut(PlayerState::apply_money),
+                    onclick: move |_| {
+                        if state().change_input.trim().parse::<i32>().is_ok() {
+                            on_push_history.call(());
+                        }
+                        state.with_mut(PlayerState::apply_money);
+                    },
                     "Apply"
                 }
             }
