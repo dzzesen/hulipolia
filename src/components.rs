@@ -2,22 +2,149 @@ use dioxus::prelude::*;
 use crate::config::{PAINT_COLORS, PURPLE_COLOR};
 use crate::market::{build_markets, shift_prices_cells_left, shift_prices_cells_right};
 use crate::state::{MarketState, PlayerState};
+use serde::{Deserialize, Serialize};
+
+
+const STORAGE_KEY: &str = "hulipoliya_game_state";
+
+#[derive(Serialize, Deserialize, Clone)]
+struct GameState {
+    player1: PlayerState,
+    player2: PlayerState,
+    player3: PlayerState,
+    player4: PlayerState,
+    player_colors: Vec<String>,
+    markets: Vec<MarketState>,
+}
+
+fn save_to_localstorage(
+    player1: &PlayerState,
+    player2: &PlayerState,
+    player3: &PlayerState,
+    player4: &PlayerState,
+    player_colors: &[String],
+    markets: &[MarketState],
+) {
+    let state = GameState {
+        player1: player1.clone(),
+        player2: player2.clone(),
+        player3: player3.clone(),
+        player4: player4.clone(),
+        player_colors: player_colors.to_vec(),
+        markets: markets.to_vec(),
+    };
+    
+    if let Ok(json) = serde_json::to_string(&state) {
+        let window = web_sys::window().unwrap();
+        let storage = window.local_storage().unwrap().unwrap();
+        let _ = storage.set_item(STORAGE_KEY, &json);
+    }
+}
+
+fn load_from_localstorage() -> Option<GameState> {
+    let window = web_sys::window().unwrap();
+    let storage = window.local_storage().unwrap().unwrap();
+    
+    if let Ok(Some(json)) = storage.get_item(STORAGE_KEY) {
+        if let Ok(state) = serde_json::from_str(&json) {
+            return Some(state);
+        }
+    }
+    None
+}
+
+fn clear_localstorage() {
+    let window = web_sys::window().unwrap();
+    let storage = window.local_storage().unwrap().unwrap();
+    let _ = storage.remove_item(STORAGE_KEY);
+}
+
+fn reset_game(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+    mut markets: Signal<Vec<MarketState>>,
+) {
+    // Reset player states (keep names and colors, reset money/credit/input)
+    player1.with_mut(|p| {
+        p.money = 20;
+        p.credit = 0;
+        p.change_input.clear();
+    });
+    player2.with_mut(|p| {
+        p.money = 20;
+        p.credit = 0;
+        p.change_input.clear();
+    });
+    player3.with_mut(|p| {
+        p.money = 20;
+        p.credit = 0;
+        p.change_input.clear();
+    });
+    player4.with_mut(|p| {
+        p.money = 20;
+        p.credit = 0;
+        p.change_input.clear();
+    });
+
+    // Reset markets to initial state
+    markets.set(build_markets());
+}
 
 #[component]
 pub fn App() -> Element {
-    let player1 = use_signal(|| PlayerState::with_name("Player 1"));
-    let player2 = use_signal(|| PlayerState::with_name("Player 2"));
-    let player3 = use_signal(|| PlayerState::with_name("Player 3"));
-    let player4 = use_signal(|| PlayerState::with_name("Player 4"));
+    // Load from localStorage or use defaults
+    let initial_state = load_from_localstorage();
+    
+    let player1 = use_signal(|| {
+        initial_state.as_ref().map(|s| s.player1.clone()).unwrap_or_else(|| PlayerState::with_name("Player 1"))
+    });
+    let player2 = use_signal(|| {
+        initial_state.as_ref().map(|s| s.player2.clone()).unwrap_or_else(|| PlayerState::with_name("Player 2"))
+    });
+    let player3 = use_signal(|| {
+        initial_state.as_ref().map(|s| s.player3.clone()).unwrap_or_else(|| PlayerState::with_name("Player 3"))
+    });
+    let player4 = use_signal(|| {
+        initial_state.as_ref().map(|s| s.player4.clone()).unwrap_or_else(|| PlayerState::with_name("Player 4"))
+    });
     let selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
     let player_colors = use_signal(|| {
-        PAINT_COLORS.iter().map(|(_, c)| c.to_string()).collect::<Vec<_>>()
+        initial_state.as_ref().map(|s| s.player_colors.clone())
+            .unwrap_or_else(|| PAINT_COLORS.iter().map(|(_, c)| c.to_string()).collect::<Vec<_>>())
     });
     let drag_source: Signal<Option<usize>> = use_signal(|| None);
-    let mut markets = use_signal(build_markets);
+    let mut markets = use_signal(|| {
+        initial_state.map(|s| s.markets).unwrap_or_else(build_markets)
+    });
+    let mut show_modal = use_signal(|| false);
+    
+    // Effect to save state whenever it changes
+    use_effect(move || {
+        save_to_localstorage(
+            &player1(),
+            &player2(),
+            &player3(),
+            &player4(),
+            &player_colors(),
+            &markets(),
+        );
+    });
 
     rsx! {
         style { {include_str!("../assets/main.css")} }
+
+        if show_modal() {
+            ConfirmModal {
+                show_modal,
+                on_confirm: move |_| {
+                    reset_game(player1, player2, player3, player4, markets);
+                    clear_localstorage();
+                    show_modal.set(false);
+                },
+            }
+        }
 
         div { class: "app",
             div { class: "players",
@@ -25,6 +152,7 @@ pub fn App() -> Element {
                 PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color, markets }
                 PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color, markets }
                 PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color, markets }
+                GameControls { show_modal }
             }
 
             hr { class: "divider" }
@@ -111,6 +239,45 @@ pub fn App() -> Element {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn GameControls(show_modal: Signal<bool>) -> Element {
+    rsx! {
+        div { class: "game-controls",
+            button {
+                class: "new-game-btn",
+                onclick: move |_| show_modal.set(true),
+                "Start new game"
+            }
+        }
+    }
+}
+
+#[component]
+fn ConfirmModal(show_modal: Signal<bool>, on_confirm: EventHandler<()>) -> Element {
+    rsx! {
+        div { class: "modal-overlay",
+            onclick: move |_| show_modal.set(false),
+            div { class: "modal-content",
+                onclick: move |evt| evt.stop_propagation(),
+                h3 { "Start New Game" }
+                p { "Are you sure you want to start a new game? All game progress will be reset, but player names and colors will be preserved." }
+                div { class: "modal-buttons",
+                    button {
+                        class: "modal-btn cancel",
+                        onclick: move |_| show_modal.set(false),
+                        "Cancel"
+                    }
+                    button {
+                        class: "modal-btn confirm",
+                        onclick: move |_| on_confirm.call(()),
+                        "Confirm"
                     }
                 }
             }

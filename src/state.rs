@@ -1,6 +1,7 @@
 use crate::config::{BASE_COLOR, HIGHLIGHT_COLOR};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PlayerState {
     pub name: String,
     pub money: i32,
@@ -38,7 +39,7 @@ impl PlayerState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CellState {
     pub label: String,
     pub is_highlight: bool,
@@ -60,10 +61,10 @@ impl CellState {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MarketState {
-    pub title: &'static str,
-    pub bg_color: &'static str,
+    pub title: String,
+    pub bg_color: String,
     pub prices_cells: Vec<CellState>,
     pub holdings_cells: Vec<CellState>,
     pub shorts_cells: Vec<CellState>,

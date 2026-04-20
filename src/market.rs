@@ -29,8 +29,8 @@ pub fn build_markets() -> Vec<MarketState> {
             let shorts_cells = build_arrow_row(cfg.right_count, cfg.arrows, "↘");
 
             MarketState {
-                title: cfg.title,
-                bg_color: cfg.bg_color,
+                title: cfg.title.to_string(),
+                bg_color: cfg.bg_color.to_string(),
                 prices_cells,
                 holdings_cells,
                 shorts_cells,
