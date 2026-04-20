@@ -21,12 +21,17 @@ hulipoliya/
 ├── Cargo.toml          # Rust dependencies
 ├── Dioxus.toml         # Dioxus configuration
 ├── shell.nix           # Nix shell configuration
+├── AGENTS.md           # This file
 ├── assets/
 │   └── main.css        # Application styles
+├── docs/
+│   └── conventions.md  # Naming conventions and concepts
 ├── src/
 │   └── main.rs         # Main application code
 └── target/             # Build output
 ```
+
+See [docs/conventions.md](docs/conventions.md) for naming conventions of game cells and concepts.
 
 ### Key Components
 
@@ -91,8 +96,6 @@ cargo build
 
 ## Notes for Agents
 
-- This is a single-page application with no routing
-- State is ephemeral (no persistence layer)
-- UI is grid-based with fixed layouts
-- Color values are hardcoded as hex strings
-- Player count is fixed at 4
+- Be concise.
+- Don't explain what you do if you weren't asked about it.
+- Don't make summary.
