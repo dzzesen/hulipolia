@@ -26,6 +26,7 @@ body {
   display: flex;
   gap: 40px;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .player-panel {
@@ -229,18 +230,36 @@ body {
 
 .game-controls {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: flex-start;
-  margin-left: auto;
-  padding-left: 20px;
-  gap: 0;
+  gap: 8px;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .game-control-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-left: 10px;
+  align-items: flex-start;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.payment-actions {
+  display: flex;
+  gap: 8px;
+  width: auto;
+  flex-wrap: wrap;
 }
 
 .history-btn {
@@ -253,7 +272,6 @@ body {
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
-  margin-right: 6px;
 }
 
 .history-btn:hover:not(:disabled) {
@@ -282,10 +300,10 @@ body {
   background-color: #45a049;
 }
 
-.pay-percents-btn {
+.pay-percents-btn,
+.pay-shorts-fee-btn {
   height: 36px;
   padding: 0 20px;
-  background-color: #ff9800;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -295,11 +313,24 @@ body {
   white-space: nowrap;
 }
 
+.pay-percents-btn {
+  background-color: #ff9800;
+}
+
 .pay-percents-btn:hover:not(:disabled) {
   background-color: #fb8c00;
 }
 
-.pay-percents-btn:disabled {
+.pay-shorts-fee-btn {
+  background-color: #d84315;
+}
+
+.pay-shorts-fee-btn:hover:not(:disabled) {
+  background-color: #bf360c;
+}
+
+.pay-percents-btn:disabled,
+.pay-shorts-fee-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
@@ -390,9 +421,20 @@ body {
   }
 
   .game-controls {
-    margin-left: 0;
-    padding-left: 0;
     width: 100%;
     align-items: center;
+  }
+
+  .history-actions {
+    justify-content: center;
+  }
+
+  .top-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .payment-actions {
+    justify-content: center;
   }
 }

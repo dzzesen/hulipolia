@@ -88,6 +88,32 @@ fn pay_credit_interest_for_all(
     player4.with_mut(PlayerState::pay_credit_interest);
 }
 
+fn count_player_shorts(markets: &[MarketState], color: &str) -> i32 {
+    markets
+        .iter()
+        .map(|market| market.shorts_cells.iter().filter(|cell| cell.color == color).count() as i32)
+        .sum()
+}
+
+fn pay_shorts_fee_for_all(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+    player_colors: &[String],
+    markets: &[MarketState],
+) {
+    let player1_fee = (count_player_shorts(markets, &player_colors[0]) + 1) / 2;
+    let player2_fee = (count_player_shorts(markets, &player_colors[1]) + 1) / 2;
+    let player3_fee = (count_player_shorts(markets, &player_colors[2]) + 1) / 2;
+    let player4_fee = (count_player_shorts(markets, &player_colors[3]) + 1) / 2;
+
+    player1.with_mut(|player| player.money -= player1_fee);
+    player2.with_mut(|player| player.money -= player2_fee);
+    player3.with_mut(|player| player.money -= player3_fee);
+    player4.with_mut(|player| player.money -= player4_fee);
+}
+
 #[component]
 pub fn App() -> Element {
     // Load from localStorage or use defaults
@@ -176,9 +202,24 @@ pub fn App() -> Element {
                     player2,
                     player3,
                     player4,
+                    player_colors,
+                    markets,
                     on_pay_percents: move |_| {
                         push_history();
                         pay_credit_interest_for_all(player1, player2, player3, player4);
+                    },
+                    on_pay_shorts_fee: move |_| {
+                        push_history();
+                        let colors = player_colors();
+                        let current_markets = markets();
+                        pay_shorts_fee_for_all(
+                            player1,
+                            player2,
+                            player3,
+                            player4,
+                            &colors,
+                            &current_markets,
+                        );
                     },
                     on_undo: move |_| {
                         let snap = history.with_mut(|h| h.undo(make_snapshot()));
@@ -294,37 +335,57 @@ fn GameControls(
     player2: Signal<PlayerState>,
     player3: Signal<PlayerState>,
     player4: Signal<PlayerState>,
+    player_colors: Signal<Vec<String>>,
+    markets: Signal<Vec<MarketState>>,
     on_pay_percents: EventHandler<()>,
+    on_pay_shorts_fee: EventHandler<()>,
     on_undo: EventHandler<()>,
     on_redo: EventHandler<()>,
 ) -> Element {
     let has_any_credit = player1().credit > 0 || player2().credit > 0 || player3().credit > 0 || player4().credit > 0;
+    let has_any_shorts_fee = {
+        let colors = player_colors();
+        let current_markets = markets();
+        colors.iter().any(|color| count_player_shorts(&current_markets, color) > 0)
+    };
 
     rsx! {
         div { class: "game-controls",
-            button {
-                class: "history-btn",
-                disabled: !history().can_undo(),
-                onclick: move |_| on_undo.call(()),
-                "◀"
-            }
-            button {
-                class: "history-btn",
-                disabled: !history().can_redo(),
-                onclick: move |_| on_redo.call(()),
-                "▶"
-            }
             div { class: "game-control-actions",
-                button {
-                    class: "new-game-btn",
-                    onclick: move |_| show_modal.set(true),
-                    "Start new game"
+                div { class: "top-actions",
+                    div { class: "history-actions",
+                        button {
+                            class: "history-btn",
+                            disabled: !history().can_undo(),
+                            onclick: move |_| on_undo.call(()),
+                            "◀"
+                        }
+                        button {
+                            class: "history-btn",
+                            disabled: !history().can_redo(),
+                            onclick: move |_| on_redo.call(()),
+                            "▶"
+                        }
+                    }
+                    button {
+                        class: "new-game-btn",
+                        onclick: move |_| show_modal.set(true),
+                        "Start new game"
+                    }
                 }
-                button {
-                    class: "pay-percents-btn",
-                    disabled: !has_any_credit,
-                    onclick: move |_| on_pay_percents.call(()),
-                    "Pay %"
+                div { class: "payment-actions",
+                    button {
+                        class: "pay-percents-btn",
+                        disabled: !has_any_credit,
+                        onclick: move |_| on_pay_percents.call(()),
+                        "Pay %"
+                    }
+                    button {
+                        class: "pay-shorts-fee-btn",
+                        disabled: !has_any_shorts_fee,
+                        onclick: move |_| on_pay_shorts_fee.call(()),
+                        "Pay shorts fee"
+                    }
                 }
             }
         }
@@ -381,7 +442,7 @@ fn PlayerPanel(
             let sell_price = purple_indices.first().copied().unwrap_or(0);
             let buy_price = purple_indices.last().copied().unwrap_or(0);
             let held = market.holdings_cells.iter().filter(|c| c.color == color).count() as i32;
-            let sold = market.shorts_cells.iter().filter(|c| c.color == color).count() as i32;
+            let sold = count_player_shorts(std::slice::from_ref(market), &color);
             held * sell_price - sold * buy_price
         }).sum();
         base + stock_sum
