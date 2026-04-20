@@ -62,13 +62,21 @@ pub struct CellState {
 }
 
 impl CellState {
+    pub fn reset_color(&mut self) {
+        self.color = if self.is_highlight {
+            HIGHLIGHT_COLOR.to_string()
+        } else {
+            BASE_COLOR.to_string()
+        };
+    }
+
+    pub fn is_painted(&self) -> bool {
+        self.color != BASE_COLOR && self.color != HIGHLIGHT_COLOR
+    }
+
     pub fn paint(&mut self, selected_color: &str) {
         if self.color == selected_color {
-            self.color = if self.is_highlight {
-                HIGHLIGHT_COLOR.to_string()
-            } else {
-                BASE_COLOR.to_string()
-            };
+            self.reset_color();
         } else {
             self.color = selected_color.to_string();
         }

@@ -67,6 +67,70 @@ pub fn shift_prices_cells_left(prices_cells: &mut Vec<CellState>) {
     }
 }
 
+fn compact_position_cells(cells: &mut [CellState]) {
+    let painted_colors: Vec<String> = cells
+        .iter()
+        .filter(|cell| cell.is_painted())
+        .map(|cell| cell.color.clone())
+        .collect();
+
+    for (idx, cell) in cells.iter_mut().enumerate() {
+        if let Some(color) = painted_colors.get(idx) {
+            cell.color = color.clone();
+        } else {
+            cell.reset_color();
+        }
+    }
+}
+
+fn remove_first_matching_position(cells: &mut [CellState], selected_color: &str) -> bool {
+    if let Some(cell) = cells.iter_mut().find(|cell| cell.color == selected_color) {
+        cell.reset_color();
+        compact_position_cells(cells);
+        return true;
+    }
+
+    false
+}
+
+fn toggle_and_compact_position_cell(cells: &mut [CellState], cell_idx: usize, selected_color: &str) -> bool {
+    if cells[cell_idx].is_painted() && cells[cell_idx].color != selected_color {
+        return false;
+    }
+
+    cells[cell_idx].paint(selected_color);
+    compact_position_cells(cells);
+    true
+}
+
+pub fn paint_holdings_or_clear_shorts(
+    market: &mut MarketState,
+    cell_idx: usize,
+    selected_color: &str,
+) -> bool {
+    if market.holdings_cells[cell_idx].color != selected_color
+        && remove_first_matching_position(&mut market.shorts_cells, selected_color)
+    {
+        return true;
+    }
+
+    toggle_and_compact_position_cell(&mut market.holdings_cells, cell_idx, selected_color)
+}
+
+pub fn paint_shorts_or_clear_holdings(
+    market: &mut MarketState,
+    cell_idx: usize,
+    selected_color: &str,
+) -> bool {
+    if market.shorts_cells[cell_idx].color != selected_color
+        && remove_first_matching_position(&mut market.holdings_cells, selected_color)
+    {
+        return true;
+    }
+
+    toggle_and_compact_position_cell(&mut market.shorts_cells, cell_idx, selected_color)
+}
+
 pub fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<CellState> {
     (1..=count)
         .map(|i| CellState {

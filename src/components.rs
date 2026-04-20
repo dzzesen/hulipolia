@@ -1,7 +1,13 @@
 use dioxus::prelude::*;
 use crate::config::{PAINT_COLORS, PURPLE_COLOR};
 use crate::history::History;
-use crate::market::{build_markets, shift_prices_cells_left, shift_prices_cells_right};
+use crate::market::{
+    build_markets,
+    paint_holdings_or_clear_shorts,
+    paint_shorts_or_clear_holdings,
+    shift_prices_cells_left,
+    shift_prices_cells_right,
+};
 use crate::state::{HistorySnapshot, MarketState, PlayerState};
 use serde::{Deserialize, Serialize};
 
@@ -293,11 +299,18 @@ pub fn App() -> Element {
                                     class: if markets()[market_idx].holdings_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
                                     style: "background-color: {markets()[market_idx].holdings_cells[cell_idx].color};",
                                     onclick: move |_| {
-                                        push_history();
+                                        let snapshot = make_snapshot();
                                         let current = selected_color();
-                                        markets.with_mut(|m| {
-                                            m[market_idx].holdings_cells[cell_idx].paint(&current);
+                                        let changed = markets.with_mut(|m| {
+                                            paint_holdings_or_clear_shorts(
+                                                &mut m[market_idx],
+                                                cell_idx,
+                                                &current,
+                                            )
                                         });
+                                        if changed {
+                                            history.with_mut(|h| h.push(snapshot));
+                                        }
                                     },
                                     "{markets()[market_idx].holdings_cells[cell_idx].label}"
                                 }
@@ -310,11 +323,18 @@ pub fn App() -> Element {
                                     class: if markets()[market_idx].shorts_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
                                     style: "background-color: {markets()[market_idx].shorts_cells[cell_idx].color};",
                                     onclick: move |_| {
-                                        push_history();
+                                        let snapshot = make_snapshot();
                                         let current = selected_color();
-                                        markets.with_mut(|m| {
-                                            m[market_idx].shorts_cells[cell_idx].paint(&current);
+                                        let changed = markets.with_mut(|m| {
+                                            paint_shorts_or_clear_holdings(
+                                                &mut m[market_idx],
+                                                cell_idx,
+                                                &current,
+                                            )
                                         });
+                                        if changed {
+                                            history.with_mut(|h| h.push(snapshot));
+                                        }
                                     },
                                     "{markets()[market_idx].shorts_cells[cell_idx].label}"
                                 }
