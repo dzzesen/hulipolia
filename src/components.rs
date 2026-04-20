@@ -76,6 +76,18 @@ fn reset_game(
     history.with_mut(|h| { h.undo_stack.clear(); h.redo_stack.clear(); });
 }
 
+fn pay_credit_interest_for_all(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+) {
+    player1.with_mut(PlayerState::pay_credit_interest);
+    player2.with_mut(PlayerState::pay_credit_interest);
+    player3.with_mut(PlayerState::pay_credit_interest);
+    player4.with_mut(PlayerState::pay_credit_interest);
+}
+
 #[component]
 pub fn App() -> Element {
     // Load from localStorage or use defaults
@@ -160,6 +172,14 @@ pub fn App() -> Element {
                 GameControls {
                     show_modal,
                     history,
+                    player1,
+                    player2,
+                    player3,
+                    player4,
+                    on_pay_percents: move |_| {
+                        push_history();
+                        pay_credit_interest_for_all(player1, player2, player3, player4);
+                    },
                     on_undo: move |_| {
                         let snap = history.with_mut(|h| h.undo(make_snapshot()));
                         if let Some(s) = snap { restore_snapshot(s); }
@@ -270,9 +290,16 @@ pub fn App() -> Element {
 fn GameControls(
     show_modal: Signal<bool>,
     history: Signal<History>,
+    player1: Signal<PlayerState>,
+    player2: Signal<PlayerState>,
+    player3: Signal<PlayerState>,
+    player4: Signal<PlayerState>,
+    on_pay_percents: EventHandler<()>,
     on_undo: EventHandler<()>,
     on_redo: EventHandler<()>,
 ) -> Element {
+    let has_any_credit = player1().credit > 0 || player2().credit > 0 || player3().credit > 0 || player4().credit > 0;
+
     rsx! {
         div { class: "game-controls",
             button {
@@ -287,10 +314,18 @@ fn GameControls(
                 onclick: move |_| on_redo.call(()),
                 "▶"
             }
-            button {
-                class: "new-game-btn",
-                onclick: move |_| show_modal.set(true),
-                "Start new game"
+            div { class: "game-control-actions",
+                button {
+                    class: "new-game-btn",
+                    onclick: move |_| show_modal.set(true),
+                    "Start new game"
+                }
+                button {
+                    class: "pay-percents-btn",
+                    disabled: !has_any_credit,
+                    onclick: move |_| on_pay_percents.call(()),
+                    "Pay %"
+                }
             }
         }
     }

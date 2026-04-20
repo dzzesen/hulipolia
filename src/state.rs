@@ -37,6 +37,16 @@ impl PlayerState {
             self.credit -= 1;
         }
     }
+
+    pub fn pay_credit_interest(&mut self) {
+        let interest = self.credit;
+
+        while self.money < interest {
+            self.add_credit();
+        }
+
+        self.money -= interest;
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

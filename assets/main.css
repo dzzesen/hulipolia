@@ -236,6 +236,13 @@ body {
   gap: 0;
 }
 
+.game-control-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 10px;
+}
+
 .history-btn {
   height: 36px;
   width: 36px;
@@ -261,7 +268,6 @@ body {
 .new-game-btn {
   height: 36px;
   padding: 0 20px;
-  margin-left: 10px;
   background-color: #4caf50;
   color: #ffffff;
   border: none;
@@ -274,6 +280,28 @@ body {
 
 .new-game-btn:hover {
   background-color: #45a049;
+}
+
+.pay-percents-btn {
+  height: 36px;
+  padding: 0 20px;
+  background-color: #ff9800;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pay-percents-btn:hover:not(:disabled) {
+  background-color: #fb8c00;
+}
+
+.pay-percents-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .modal-overlay {
