@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::config::{PAINT_COLORS, PURPLE_COLOR};
-use crate::market::{build_markets, shift_left_cells_left, shift_left_cells_right};
+use crate::market::{build_markets, shift_prices_cells_left, shift_prices_cells_right};
 use crate::state::{MarketState, PlayerState};
 
 #[component]
@@ -36,23 +36,23 @@ pub fn App() -> Element {
                             class: "shift-btn",
                             onclick: move |_| {
                                 markets.with_mut(|m| {
-                                    shift_left_cells_left(&mut m[market_idx].left_cells);
+                                    shift_prices_cells_left(&mut m[market_idx].prices_cells);
                                 });
                             },
                             "◀"
                         }
                         div { class: "left-scale",
-                            for cell_idx in 0..markets()[market_idx].left_cells.len() {
+                            for cell_idx in 0..markets()[market_idx].prices_cells.len() {
                                 button {
                                     class: "price-cell",
-                                    style: "background-color: {markets()[market_idx].left_cells[cell_idx].color};",
+                                    style: "background-color: {markets()[market_idx].prices_cells[cell_idx].color};",
                                     onclick: move |_| {
                                         let current = selected_color();
                                         markets.with_mut(|m| {
-                                            m[market_idx].left_cells[cell_idx].paint(&current);
+                                            m[market_idx].prices_cells[cell_idx].paint(&current);
                                         });
                                     },
-                                    "{markets()[market_idx].left_cells[cell_idx].label}"
+                                    "{markets()[market_idx].prices_cells[cell_idx].label}"
                                 }
                             }
                         }
@@ -60,7 +60,7 @@ pub fn App() -> Element {
                             class: "shift-btn",
                             onclick: move |_| {
                                 markets.with_mut(|m| {
-                                    shift_left_cells_right(&mut m[market_idx].left_cells);
+                                    shift_prices_cells_right(&mut m[market_idx].prices_cells);
                                 });
                             },
                             "▶"
@@ -81,33 +81,33 @@ pub fn App() -> Element {
 
                     div { class: "arrow-rows",
                         div { class: "arrow-row",
-                            for cell_idx in 0..markets()[market_idx].upper_cells.len() {
+                            for cell_idx in 0..markets()[market_idx].holdings_cells.len() {
                                 button {
-                                    class: if markets()[market_idx].upper_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
-                                    style: "background-color: {markets()[market_idx].upper_cells[cell_idx].color};",
+                                    class: if markets()[market_idx].holdings_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                    style: "background-color: {markets()[market_idx].holdings_cells[cell_idx].color};",
                                     onclick: move |_| {
                                         let current = selected_color();
                                         markets.with_mut(|m| {
-                                            m[market_idx].upper_cells[cell_idx].paint(&current);
+                                            m[market_idx].holdings_cells[cell_idx].paint(&current);
                                         });
                                     },
-                                    "{markets()[market_idx].upper_cells[cell_idx].label}"
+                                    "{markets()[market_idx].holdings_cells[cell_idx].label}"
                                 }
                             }
                         }
 
                         div { class: "arrow-row",
-                            for cell_idx in 0..markets()[market_idx].lower_cells.len() {
+                            for cell_idx in 0..markets()[market_idx].shorts_cells.len() {
                                 button {
-                                    class: if markets()[market_idx].lower_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
-                                    style: "background-color: {markets()[market_idx].lower_cells[cell_idx].color};",
+                                    class: if markets()[market_idx].shorts_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                    style: "background-color: {markets()[market_idx].shorts_cells[cell_idx].color};",
                                     onclick: move |_| {
                                         let current = selected_color();
                                         markets.with_mut(|m| {
-                                            m[market_idx].lower_cells[cell_idx].paint(&current);
+                                            m[market_idx].shorts_cells[cell_idx].paint(&current);
                                         });
                                     },
-                                    "{markets()[market_idx].lower_cells[cell_idx].label}"
+                                    "{markets()[market_idx].shorts_cells[cell_idx].label}"
                                 }
                             }
                         }
@@ -133,15 +133,15 @@ fn PlayerPanel(
         let mks = markets();
         let base = s.money - 10 * s.credit;
         let stock_sum: i32 = mks.iter().map(|market| {
-            let mut purple_indices: Vec<i32> = market.left_cells.iter()
+            let mut purple_indices: Vec<i32> = market.prices_cells.iter()
                 .filter(|c| c.color == PURPLE_COLOR)
                 .filter_map(|c| c.label.parse::<i32>().ok())
                 .collect();
             purple_indices.sort();
             let sell_price = purple_indices.first().copied().unwrap_or(0);
             let buy_price = purple_indices.last().copied().unwrap_or(0);
-            let held = market.upper_cells.iter().filter(|c| c.color == color).count() as i32;
-            let sold = market.lower_cells.iter().filter(|c| c.color == color).count() as i32;
+            let held = market.holdings_cells.iter().filter(|c| c.color == color).count() as i32;
+            let sold = market.shorts_cells.iter().filter(|c| c.color == color).count() as i32;
             held * sell_price - sold * buy_price
         }).sum();
         base + stock_sum

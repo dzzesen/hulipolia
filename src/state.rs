@@ -64,7 +64,7 @@ impl CellState {
 pub struct MarketState {
     pub title: &'static str,
     pub bg_color: &'static str,
-    pub left_cells: Vec<CellState>,
-    pub upper_cells: Vec<CellState>,
-    pub lower_cells: Vec<CellState>,
+    pub prices_cells: Vec<CellState>,
+    pub holdings_cells: Vec<CellState>,
+    pub shorts_cells: Vec<CellState>,
 }
