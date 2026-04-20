@@ -463,7 +463,7 @@ fn PlayerPanel(
                 span { "Credit:" }
                 span { "{state().credit}" }
                 button {
-                    class: "control-btn",
+                    class: "control-btn credit-btn",
                     onclick: move |_| {
                         on_push_history.call(());
                         state.with_mut(PlayerState::subtract_credit);
@@ -471,7 +471,7 @@ fn PlayerPanel(
                     "-"
                 }
                 button {
-                    class: "control-btn",
+                    class: "control-btn credit-btn",
                     onclick: move |_| {
                         on_push_history.call(());
                         state.with_mut(PlayerState::add_credit);
