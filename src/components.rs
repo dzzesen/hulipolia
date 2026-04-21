@@ -120,6 +120,18 @@ fn pay_shorts_fee_for_all(
     player4.with_mut(|player| player.money -= player4_fee);
 }
 
+fn give_salary_for_all(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+) {
+    player1.with_mut(|player| player.money += 5);
+    player2.with_mut(|player| player.money += 5);
+    player3.with_mut(|player| player.money += 5);
+    player4.with_mut(|player| player.money += 5);
+}
+
 #[component]
 pub fn App() -> Element {
     // Load from localStorage or use defaults
@@ -226,6 +238,10 @@ pub fn App() -> Element {
                             &colors,
                             &current_markets,
                         );
+                    },
+                    on_give_salary: move |_| {
+                        push_history();
+                        give_salary_for_all(player1, player2, player3, player4);
                     },
                     on_undo: move |_| {
                         let snap = history.with_mut(|h| h.undo(make_snapshot()));
@@ -359,6 +375,7 @@ fn GameControls(
     markets: Signal<Vec<MarketState>>,
     on_pay_percents: EventHandler<()>,
     on_pay_shorts_fee: EventHandler<()>,
+    on_give_salary: EventHandler<()>,
     on_undo: EventHandler<()>,
     on_redo: EventHandler<()>,
 ) -> Element {
@@ -405,6 +422,11 @@ fn GameControls(
                         disabled: !has_any_shorts_fee,
                         onclick: move |_| on_pay_shorts_fee.call(()),
                         "Pay shorts fee"
+                    }
+                    button {
+                        class: "give-salary-btn",
+                        onclick: move |_| on_give_salary.call(()),
+                        "Give salary"
                     }
                 }
             }

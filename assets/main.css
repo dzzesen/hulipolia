@@ -268,9 +268,9 @@ body {
 
 .payment-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   width: auto;
-  flex-wrap: wrap;
 }
 
 .history-btn {
@@ -312,7 +312,8 @@ body {
 }
 
 .pay-percents-btn,
-.pay-shorts-fee-btn {
+.pay-shorts-fee-btn,
+.give-salary-btn {
   height: 36px;
   padding: 0 20px;
   color: #ffffff;
@@ -340,8 +341,17 @@ body {
   background-color: #bf360c;
 }
 
+.give-salary-btn {
+  background-color: #2e7d32;
+}
+
+.give-salary-btn:hover:not(:disabled) {
+  background-color: #1b5e20;
+}
+
 .pay-percents-btn:disabled,
-.pay-shorts-fee-btn:disabled {
+.pay-shorts-fee-btn:disabled,
+.give-salary-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
