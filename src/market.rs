@@ -4,6 +4,11 @@ use crate::state::{CellState, MarketState};
 const AUTO_MIN_PRICE_INDEX: usize = 3;
 const AUTO_MAX_PRICE_INDEX: usize = 16;
 
+pub struct PositionChange {
+    pub changed: bool,
+    pub money_delta: i32,
+}
+
 pub fn build_markets() -> Vec<MarketState> {
     MARKET_CONFIGS
         .iter()
@@ -77,6 +82,19 @@ fn purple_price_indices(prices_cells: &[CellState]) -> Vec<usize> {
         .filter(|(_, cell)| cell.color == PURPLE_COLOR)
         .map(|(idx, _)| idx)
         .collect()
+}
+
+fn current_buy_and_sell_prices(prices_cells: &[CellState]) -> (i32, i32) {
+    let mut purple_indices: Vec<i32> = purple_price_indices(prices_cells)
+        .into_iter()
+        .map(|idx| idx as i32)
+        .collect();
+    purple_indices.sort();
+
+    let sell_price = purple_indices.first().copied().unwrap_or(0);
+    let buy_price = purple_indices.last().copied().unwrap_or(0);
+
+    (buy_price, sell_price)
 }
 
 fn shift_prices_cells_right_auto(prices_cells: &mut Vec<CellState>) {
@@ -179,46 +197,74 @@ pub fn paint_holdings_or_clear_shorts(
     market: &mut MarketState,
     cell_idx: usize,
     selected_color: &str,
-) -> bool {
+) -> PositionChange {
     let holdings_arrow_count = count_painted_arrow_cells(&market.holdings_cells);
     let shorts_arrow_count = count_painted_arrow_cells(&market.shorts_cells);
+    let (buy_price, sell_price) = current_buy_and_sell_prices(&market.prices_cells);
 
     if market.holdings_cells[cell_idx].color != selected_color
         && remove_first_matching_position(&mut market.shorts_cells, selected_color)
     {
         sync_prices_after_shorts_change(market, shorts_arrow_count);
-        return true;
+        return PositionChange {
+            changed: true,
+            money_delta: -buy_price,
+        };
     }
 
+    let was_painted = market.holdings_cells[cell_idx].color == selected_color;
     let changed =
         toggle_and_compact_position_cell(&mut market.holdings_cells, cell_idx, selected_color);
     if changed {
         sync_prices_after_holdings_change(market, holdings_arrow_count);
     }
-    changed
+    PositionChange {
+        changed,
+        money_delta: if !changed {
+            0
+        } else if was_painted {
+            sell_price
+        } else {
+            -buy_price
+        },
+    }
 }
 
 pub fn paint_shorts_or_clear_holdings(
     market: &mut MarketState,
     cell_idx: usize,
     selected_color: &str,
-) -> bool {
+) -> PositionChange {
     let holdings_arrow_count = count_painted_arrow_cells(&market.holdings_cells);
     let shorts_arrow_count = count_painted_arrow_cells(&market.shorts_cells);
+    let (buy_price, sell_price) = current_buy_and_sell_prices(&market.prices_cells);
 
     if market.shorts_cells[cell_idx].color != selected_color
         && remove_first_matching_position(&mut market.holdings_cells, selected_color)
     {
         sync_prices_after_holdings_change(market, holdings_arrow_count);
-        return true;
+        return PositionChange {
+            changed: true,
+            money_delta: sell_price,
+        };
     }
 
+    let was_painted = market.shorts_cells[cell_idx].color == selected_color;
     let changed =
         toggle_and_compact_position_cell(&mut market.shorts_cells, cell_idx, selected_color);
     if changed {
         sync_prices_after_shorts_change(market, shorts_arrow_count);
     }
-    changed
+    PositionChange {
+        changed,
+        money_delta: if !changed {
+            0
+        } else if was_painted {
+            -buy_price
+        } else {
+            sell_price
+        },
+    }
 }
 
 pub fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<CellState> {

@@ -132,6 +132,28 @@ fn give_salary_for_all(
     player4.with_mut(|player| player.money += 5);
 }
 
+fn apply_money_delta_for_color(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+    player_colors: &[String],
+    selected_color: &str,
+    money_delta: i32,
+) {
+    if money_delta == 0 {
+        return;
+    }
+
+    match player_colors.iter().position(|color| color == selected_color) {
+        Some(0) => player1.with_mut(|player| player.money += money_delta),
+        Some(1) => player2.with_mut(|player| player.money += money_delta),
+        Some(2) => player3.with_mut(|player| player.money += money_delta),
+        Some(3) => player4.with_mut(|player| player.money += money_delta),
+        _ => {}
+    }
+}
+
 #[component]
 pub fn App() -> Element {
     // Load from localStorage or use defaults
@@ -317,14 +339,24 @@ pub fn App() -> Element {
                                     onclick: move |_| {
                                         let snapshot = make_snapshot();
                                         let current = selected_color();
-                                        let changed = markets.with_mut(|m| {
+                                        let change = markets.with_mut(|m| {
                                             paint_holdings_or_clear_shorts(
                                                 &mut m[market_idx],
                                                 cell_idx,
                                                 &current,
                                             )
                                         });
-                                        if changed {
+                                        if change.changed {
+                                            let colors = player_colors();
+                                            apply_money_delta_for_color(
+                                                player1,
+                                                player2,
+                                                player3,
+                                                player4,
+                                                &colors,
+                                                &current,
+                                                change.money_delta,
+                                            );
                                             history.with_mut(|h| h.push(snapshot));
                                         }
                                     },
@@ -341,14 +373,24 @@ pub fn App() -> Element {
                                     onclick: move |_| {
                                         let snapshot = make_snapshot();
                                         let current = selected_color();
-                                        let changed = markets.with_mut(|m| {
+                                        let change = markets.with_mut(|m| {
                                             paint_shorts_or_clear_holdings(
                                                 &mut m[market_idx],
                                                 cell_idx,
                                                 &current,
                                             )
                                         });
-                                        if changed {
+                                        if change.changed {
+                                            let colors = player_colors();
+                                            apply_money_delta_for_color(
+                                                player1,
+                                                player2,
+                                                player3,
+                                                player4,
+                                                &colors,
+                                                &current,
+                                                change.money_delta,
+                                            );
                                             history.with_mut(|h| h.push(snapshot));
                                         }
                                     },
