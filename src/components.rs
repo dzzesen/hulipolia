@@ -20,6 +20,8 @@ struct GameState {
     player2: PlayerState,
     player3: PlayerState,
     player4: PlayerState,
+    fp_owner: usize,
+    fp_value: usize,
     player_colors: Vec<String>,
     markets: Vec<MarketState>,
 }
@@ -29,6 +31,8 @@ fn save_to_localstorage(
     player2: &PlayerState,
     player3: &PlayerState,
     player4: &PlayerState,
+    fp_owner: usize,
+    fp_value: usize,
     player_colors: &[String],
     markets: &[MarketState],
 ) {
@@ -37,6 +41,8 @@ fn save_to_localstorage(
         player2: player2.clone(),
         player3: player3.clone(),
         player4: player4.clone(),
+        fp_owner,
+        fp_value,
         player_colors: player_colors.to_vec(),
         markets: markets.to_vec(),
     };
@@ -71,6 +77,8 @@ fn reset_game(
     mut player2: Signal<PlayerState>,
     mut player3: Signal<PlayerState>,
     mut player4: Signal<PlayerState>,
+    mut fp_owner: Signal<usize>,
+    mut fp_value: Signal<usize>,
     mut markets: Signal<Vec<MarketState>>,
     mut history: Signal<History>,
 ) {
@@ -78,6 +86,8 @@ fn reset_game(
     player2.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
     player3.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
     player4.with_mut(|p| { p.money = 20; p.credit = 0; p.change_input.clear(); });
+    fp_owner.set(0);
+    fp_value.set(1);
     markets.set(build_markets());
     history.with_mut(|h| { h.undo_stack.clear(); h.redo_stack.clear(); });
 }
@@ -171,12 +181,15 @@ pub fn App() -> Element {
     let mut player4 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player4.clone()).unwrap_or_else(|| PlayerState::with_name("Player 4"))
     });
+    let mut fp_owner = use_signal(|| initial_state.as_ref().map(|s| s.fp_owner).unwrap_or(0));
+    let mut fp_value = use_signal(|| initial_state.as_ref().map(|s| s.fp_value).unwrap_or(1));
     let selected_color = use_signal(|| PAINT_COLORS[0].1.to_string());
     let player_colors = use_signal(|| {
         initial_state.as_ref().map(|s| s.player_colors.clone())
             .unwrap_or_else(|| PAINT_COLORS.iter().map(|(_, c)| c.to_string()).collect::<Vec<_>>())
     });
     let drag_source: Signal<Option<usize>> = use_signal(|| None);
+    let fp_drag_source: Signal<bool> = use_signal(|| false);
     let mut markets = use_signal(|| {
         initial_state.map(|s| s.markets).unwrap_or_else(build_markets)
     });
@@ -188,6 +201,8 @@ pub fn App() -> Element {
         player2: player2(),
         player3: player3(),
         player4: player4(),
+        fp_owner: fp_owner(),
+        fp_value: fp_value(),
         markets: markets(),
     };
 
@@ -200,6 +215,8 @@ pub fn App() -> Element {
         player2.set(s.player2);
         player3.set(s.player3);
         player4.set(s.player4);
+        fp_owner.set(s.fp_owner);
+        fp_value.set(s.fp_value);
         markets.set(s.markets);
     };
 
@@ -210,6 +227,8 @@ pub fn App() -> Element {
             &player2(),
             &player3(),
             &player4(),
+            fp_owner(),
+            fp_value(),
             &player_colors(),
             &markets(),
         );
@@ -222,7 +241,7 @@ pub fn App() -> Element {
             ConfirmModal {
                 show_modal,
                 on_confirm: move |_| {
-                    reset_game(player1, player2, player3, player4, markets, history);
+                    reset_game(player1, player2, player3, player4, fp_owner, fp_value, markets, history);
                     clear_localstorage();
                     show_modal.set(false);
                 },
@@ -231,10 +250,10 @@ pub fn App() -> Element {
 
         div { class: "app",
             div { class: "players",
-                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
-                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
-                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
-                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player1, player_idx: 0, player_colors, drag_source, fp_owner, fp_value, fp_drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player2, player_idx: 1, player_colors, drag_source, fp_owner, fp_value, fp_drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player3, player_idx: 2, player_colors, drag_source, fp_owner, fp_value, fp_drag_source, selected_color, markets, on_push_history: move |_| push_history() }
+                PlayerPanel { state: player4, player_idx: 3, player_colors, drag_source, fp_owner, fp_value, fp_drag_source, selected_color, markets, on_push_history: move |_| push_history() }
                 GameControls {
                     show_modal,
                     history,
@@ -508,6 +527,9 @@ fn PlayerPanel(
     player_idx: usize,
     mut player_colors: Signal<Vec<String>>,
     mut drag_source: Signal<Option<usize>>,
+    mut fp_owner: Signal<usize>,
+    mut fp_value: Signal<usize>,
+    mut fp_drag_source: Signal<bool>,
     mut selected_color: Signal<String>,
     markets: Signal<Vec<MarketState>>,
     on_push_history: EventHandler<()>,
@@ -534,12 +556,41 @@ fn PlayerPanel(
 
     rsx! {
         div { class: "player-panel",
-            input {
-                class: "player-title-input",
-                value: "{state().name}",
-                oninput: move |evt| {
-                    let value = evt.value();
-                    state.with_mut(|s| s.name = value);
+            div {
+                class: "player-title-row",
+                ondragover: move |evt| {
+                    if fp_drag_source() {
+                        evt.prevent_default();
+                    }
+                },
+                ondrop: move |evt| {
+                    evt.prevent_default();
+                    if fp_drag_source() && fp_owner() != player_idx {
+                        on_push_history.call(());
+                        fp_owner.set(player_idx);
+                    }
+                    fp_drag_source.set(false);
+                },
+                input {
+                    class: "player-title-input",
+                    value: "{state().name}",
+                    oninput: move |evt| {
+                        let value = evt.value();
+                        state.with_mut(|s| s.name = value);
+                    }
+                }
+                if fp_owner() == player_idx {
+                    button {
+                        class: "fp-btn",
+                        draggable: true,
+                        onclick: move |_| {
+                            on_push_history.call(());
+                            fp_value.with_mut(|value| *value = (*value % 3) + 1);
+                        },
+                        ondragstart: move |_| fp_drag_source.set(true),
+                        ondragend: move |_| fp_drag_source.set(false),
+                        "FP {fp_value()}"
+                    }
                 }
             }
 

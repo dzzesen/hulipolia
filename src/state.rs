@@ -98,5 +98,7 @@ pub struct HistorySnapshot {
     pub player2: PlayerState,
     pub player3: PlayerState,
     pub player4: PlayerState,
+    pub fp_owner: usize,
+    pub fp_value: usize,
     pub markets: Vec<MarketState>,
 }

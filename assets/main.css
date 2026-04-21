@@ -37,6 +37,12 @@ body {
   width: 250px;
 }
 
+.player-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .player-title-input {
   margin: 0;
   font-size: 18px;
@@ -45,10 +51,29 @@ body {
   border: none;
   border-bottom: 1px solid #aaa;
   color: inherit;
-  width: 100%;
+  width: 170px;
+  flex: 1;
   text-align: center;
   outline: none;
   padding: 2px 4px;
+}
+
+.fp-btn {
+  min-width: 58px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #c62828;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.fp-btn:active {
+  cursor: grabbing;
 }
 
 .player-title-input:focus {
