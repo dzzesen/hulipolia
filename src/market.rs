@@ -1,6 +1,9 @@
 use crate::config::{BASE_COLOR, HIGHLIGHT_COLOR, PURPLE_COLOR, MARKET_CONFIGS};
 use crate::state::{CellState, MarketState};
 
+const AUTO_MIN_PRICE_INDEX: usize = 3;
+const AUTO_MAX_PRICE_INDEX: usize = 16;
+
 pub fn build_markets() -> Vec<MarketState> {
     MARKET_CONFIGS
         .iter()
@@ -67,6 +70,59 @@ pub fn shift_prices_cells_left(prices_cells: &mut Vec<CellState>) {
     }
 }
 
+fn purple_price_indices(prices_cells: &[CellState]) -> Vec<usize> {
+    prices_cells
+        .iter()
+        .enumerate()
+        .filter(|(_, cell)| cell.color == PURPLE_COLOR)
+        .map(|(idx, _)| idx)
+        .collect()
+}
+
+fn shift_prices_cells_right_auto(prices_cells: &mut Vec<CellState>) {
+    let purple_indices = purple_price_indices(prices_cells);
+    if purple_indices
+        .last()
+        .copied()
+        .is_some_and(|idx| idx >= AUTO_MAX_PRICE_INDEX)
+    {
+        return;
+    }
+
+    shift_prices_cells_right(prices_cells);
+}
+
+fn shift_prices_cells_left_auto(prices_cells: &mut Vec<CellState>) {
+    let purple_indices = purple_price_indices(prices_cells);
+    if purple_indices
+        .first()
+        .copied()
+        .is_some_and(|idx| idx <= AUTO_MIN_PRICE_INDEX)
+    {
+        return;
+    }
+
+    shift_prices_cells_left(prices_cells);
+}
+
+fn count_painted_arrow_cells(cells: &[CellState]) -> i32 {
+    cells.iter()
+        .filter(|cell| cell.is_arrow && cell.is_painted())
+        .count() as i32
+}
+
+fn apply_price_shift_delta(prices_cells: &mut Vec<CellState>, delta: i32) {
+    if delta > 0 {
+        for _ in 0..delta {
+            shift_prices_cells_right_auto(prices_cells);
+        }
+    } else {
+        for _ in 0..(-delta) {
+            shift_prices_cells_left_auto(prices_cells);
+        }
+    }
+}
+
 fn compact_position_cells(cells: &mut [CellState]) {
     let painted_colors: Vec<String> = cells
         .iter()
@@ -103,18 +159,43 @@ fn toggle_and_compact_position_cell(cells: &mut [CellState], cell_idx: usize, se
     true
 }
 
+fn sync_prices_after_holdings_change(market: &mut MarketState, painted_arrows_before: i32) {
+    let painted_arrows_after = count_painted_arrow_cells(&market.holdings_cells);
+    apply_price_shift_delta(
+        &mut market.prices_cells,
+        painted_arrows_after - painted_arrows_before,
+    );
+}
+
+fn sync_prices_after_shorts_change(market: &mut MarketState, painted_arrows_before: i32) {
+    let painted_arrows_after = count_painted_arrow_cells(&market.shorts_cells);
+    apply_price_shift_delta(
+        &mut market.prices_cells,
+        painted_arrows_before - painted_arrows_after,
+    );
+}
+
 pub fn paint_holdings_or_clear_shorts(
     market: &mut MarketState,
     cell_idx: usize,
     selected_color: &str,
 ) -> bool {
+    let holdings_arrow_count = count_painted_arrow_cells(&market.holdings_cells);
+    let shorts_arrow_count = count_painted_arrow_cells(&market.shorts_cells);
+
     if market.holdings_cells[cell_idx].color != selected_color
         && remove_first_matching_position(&mut market.shorts_cells, selected_color)
     {
+        sync_prices_after_shorts_change(market, shorts_arrow_count);
         return true;
     }
 
-    toggle_and_compact_position_cell(&mut market.holdings_cells, cell_idx, selected_color)
+    let changed =
+        toggle_and_compact_position_cell(&mut market.holdings_cells, cell_idx, selected_color);
+    if changed {
+        sync_prices_after_holdings_change(market, holdings_arrow_count);
+    }
+    changed
 }
 
 pub fn paint_shorts_or_clear_holdings(
@@ -122,13 +203,22 @@ pub fn paint_shorts_or_clear_holdings(
     cell_idx: usize,
     selected_color: &str,
 ) -> bool {
+    let holdings_arrow_count = count_painted_arrow_cells(&market.holdings_cells);
+    let shorts_arrow_count = count_painted_arrow_cells(&market.shorts_cells);
+
     if market.shorts_cells[cell_idx].color != selected_color
         && remove_first_matching_position(&mut market.holdings_cells, selected_color)
     {
+        sync_prices_after_holdings_change(market, holdings_arrow_count);
         return true;
     }
 
-    toggle_and_compact_position_cell(&mut market.shorts_cells, cell_idx, selected_color)
+    let changed =
+        toggle_and_compact_position_cell(&mut market.shorts_cells, cell_idx, selected_color);
+    if changed {
+        sync_prices_after_shorts_change(market, shorts_arrow_count);
+    }
+    changed
 }
 
 pub fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<CellState> {
