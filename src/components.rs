@@ -164,6 +164,13 @@ fn apply_money_delta_for_color(
     }
 }
 
+fn position_hover_title(cell: &crate::state::CellState, action: &str) -> String {
+    match (cell.is_painted(), cell.remembered_price) {
+        (true, Some(price)) => format!("{action} at {price}"),
+        _ => String::new(),
+    }
+}
+
 #[component]
 pub fn App() -> Element {
     // Load from localStorage or use defaults
@@ -352,68 +359,86 @@ pub fn App() -> Element {
                     div { class: "arrow-rows",
                         div { class: "arrow-row",
                             for cell_idx in 0..markets()[market_idx].holdings_cells.len() {
-                                button {
-                                    class: if markets()[market_idx].holdings_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
-                                    style: "background-color: {markets()[market_idx].holdings_cells[cell_idx].color};",
-                                    onclick: move |_| {
-                                        let snapshot = make_snapshot();
-                                        let current = selected_color();
-                                        let change = markets.with_mut(|m| {
-                                            paint_holdings_or_clear_shorts(
-                                                &mut m[market_idx],
-                                                cell_idx,
-                                                &current,
-                                            )
-                                        });
-                                        if change.changed {
-                                            let colors = player_colors();
-                                            apply_money_delta_for_color(
-                                                player1,
-                                                player2,
-                                                player3,
-                                                player4,
-                                                &colors,
-                                                &current,
-                                                change.money_delta,
-                                            );
-                                            history.with_mut(|h| h.push(snapshot));
+                                div { class: "position-cell-wrap",
+                                    button {
+                                        class: if markets()[market_idx].holdings_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                        style: "background-color: {markets()[market_idx].holdings_cells[cell_idx].color};",
+                                        aria_label: "{position_hover_title(&markets()[market_idx].holdings_cells[cell_idx], \"Bought\")}",
+                                        onclick: move |_| {
+                                            let snapshot = make_snapshot();
+                                            let current = selected_color();
+                                            let change = markets.with_mut(|m| {
+                                                paint_holdings_or_clear_shorts(
+                                                    &mut m[market_idx],
+                                                    cell_idx,
+                                                    &current,
+                                                )
+                                            });
+                                            if change.changed {
+                                                let colors = player_colors();
+                                                apply_money_delta_for_color(
+                                                    player1,
+                                                    player2,
+                                                    player3,
+                                                    player4,
+                                                    &colors,
+                                                    &current,
+                                                    change.money_delta,
+                                                );
+                                                history.with_mut(|h| h.push(snapshot));
+                                            }
+                                        },
+                                        "{markets()[market_idx].holdings_cells[cell_idx].label}"
+                                    }
+                                    if markets()[market_idx].holdings_cells[cell_idx].is_painted() {
+                                        div { class: "position-tooltip",
+                                            span { class: "position-tooltip-label", "Bought" }
+                                            span { class: "position-tooltip-price", "{markets()[market_idx].holdings_cells[cell_idx].remembered_price.unwrap_or_default()}" }
                                         }
-                                    },
-                                    "{markets()[market_idx].holdings_cells[cell_idx].label}"
+                                    }
                                 }
                             }
                         }
 
                         div { class: "arrow-row",
                             for cell_idx in 0..markets()[market_idx].shorts_cells.len() {
-                                button {
-                                    class: if markets()[market_idx].shorts_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
-                                    style: "background-color: {markets()[market_idx].shorts_cells[cell_idx].color};",
-                                    onclick: move |_| {
-                                        let snapshot = make_snapshot();
-                                        let current = selected_color();
-                                        let change = markets.with_mut(|m| {
-                                            paint_shorts_or_clear_holdings(
-                                                &mut m[market_idx],
-                                                cell_idx,
-                                                &current,
-                                            )
-                                        });
-                                        if change.changed {
-                                            let colors = player_colors();
-                                            apply_money_delta_for_color(
-                                                player1,
-                                                player2,
-                                                player3,
-                                                player4,
-                                                &colors,
-                                                &current,
-                                                change.money_delta,
-                                            );
-                                            history.with_mut(|h| h.push(snapshot));
+                                div { class: "position-cell-wrap",
+                                    button {
+                                        class: if markets()[market_idx].shorts_cells[cell_idx].is_arrow { "cell arrow-gap" } else { "cell" },
+                                        style: "background-color: {markets()[market_idx].shorts_cells[cell_idx].color};",
+                                        aria_label: "{position_hover_title(&markets()[market_idx].shorts_cells[cell_idx], \"Sold\")}",
+                                        onclick: move |_| {
+                                            let snapshot = make_snapshot();
+                                            let current = selected_color();
+                                            let change = markets.with_mut(|m| {
+                                                paint_shorts_or_clear_holdings(
+                                                    &mut m[market_idx],
+                                                    cell_idx,
+                                                    &current,
+                                                )
+                                            });
+                                            if change.changed {
+                                                let colors = player_colors();
+                                                apply_money_delta_for_color(
+                                                    player1,
+                                                    player2,
+                                                    player3,
+                                                    player4,
+                                                    &colors,
+                                                    &current,
+                                                    change.money_delta,
+                                                );
+                                                history.with_mut(|h| h.push(snapshot));
+                                            }
+                                        },
+                                        "{markets()[market_idx].shorts_cells[cell_idx].label}"
+                                    }
+                                    if markets()[market_idx].shorts_cells[cell_idx].is_painted() {
+                                        div { class: "position-tooltip",
+                                            span { class: "position-tooltip-label", "Sold" }
+                                            span { class: "position-tooltip-price", "{markets()[market_idx].shorts_cells[cell_idx].remembered_price.unwrap_or_default()}" }
                                         }
-                                    },
-                                    "{markets()[market_idx].shorts_cells[cell_idx].label}"
+                                    }
                                 }
                             }
                         }

@@ -59,6 +59,8 @@ pub struct CellState {
     pub is_highlight: bool,
     pub color: String,
     pub is_arrow: bool,
+    #[serde(default)]
+    pub remembered_price: Option<i32>,
 }
 
 impl CellState {
@@ -68,6 +70,7 @@ impl CellState {
         } else {
             BASE_COLOR.to_string()
         };
+        self.remembered_price = None;
     }
 
     pub fn is_painted(&self) -> bool {
@@ -79,6 +82,15 @@ impl CellState {
             self.reset_color();
         } else {
             self.color = selected_color.to_string();
+        }
+    }
+
+    pub fn paint_position(&mut self, selected_color: &str, remembered_price: i32) {
+        if self.color == selected_color {
+            self.reset_color();
+        } else {
+            self.color = selected_color.to_string();
+            self.remembered_price = Some(remembered_price);
         }
     }
 }

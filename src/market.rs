@@ -29,6 +29,7 @@ pub fn build_markets() -> Vec<MarketState> {
                         is_highlight,
                         color: color.to_string(),
                         is_arrow: false,
+                        remembered_price: None,
                     }
                 })
                 .collect();
@@ -142,15 +143,16 @@ fn apply_price_shift_delta(prices_cells: &mut Vec<CellState>, delta: i32) {
 }
 
 fn compact_position_cells(cells: &mut [CellState]) {
-    let painted_colors: Vec<String> = cells
+    let painted_positions: Vec<(String, Option<i32>)> = cells
         .iter()
         .filter(|cell| cell.is_painted())
-        .map(|cell| cell.color.clone())
+        .map(|cell| (cell.color.clone(), cell.remembered_price))
         .collect();
 
     for (idx, cell) in cells.iter_mut().enumerate() {
-        if let Some(color) = painted_colors.get(idx) {
+        if let Some((color, remembered_price)) = painted_positions.get(idx) {
             cell.color = color.clone();
+            cell.remembered_price = *remembered_price;
         } else {
             cell.reset_color();
         }
@@ -167,12 +169,17 @@ fn remove_first_matching_position(cells: &mut [CellState], selected_color: &str)
     false
 }
 
-fn toggle_and_compact_position_cell(cells: &mut [CellState], cell_idx: usize, selected_color: &str) -> bool {
+fn toggle_and_compact_position_cell(
+    cells: &mut [CellState],
+    cell_idx: usize,
+    selected_color: &str,
+    remembered_price: i32,
+) -> bool {
     if cells[cell_idx].is_painted() && cells[cell_idx].color != selected_color {
         return false;
     }
 
-    cells[cell_idx].paint(selected_color);
+    cells[cell_idx].paint_position(selected_color, remembered_price);
     compact_position_cells(cells);
     true
 }
@@ -213,8 +220,12 @@ pub fn paint_holdings_or_clear_shorts(
     }
 
     let was_painted = market.holdings_cells[cell_idx].color == selected_color;
-    let changed =
-        toggle_and_compact_position_cell(&mut market.holdings_cells, cell_idx, selected_color);
+    let changed = toggle_and_compact_position_cell(
+        &mut market.holdings_cells,
+        cell_idx,
+        selected_color,
+        buy_price,
+    );
     if changed {
         sync_prices_after_holdings_change(market, holdings_arrow_count);
     }
@@ -250,8 +261,12 @@ pub fn paint_shorts_or_clear_holdings(
     }
 
     let was_painted = market.shorts_cells[cell_idx].color == selected_color;
-    let changed =
-        toggle_and_compact_position_cell(&mut market.shorts_cells, cell_idx, selected_color);
+    let changed = toggle_and_compact_position_cell(
+        &mut market.shorts_cells,
+        cell_idx,
+        selected_color,
+        sell_price,
+    );
     if changed {
         sync_prices_after_shorts_change(market, shorts_arrow_count);
     }
@@ -278,6 +293,7 @@ pub fn build_arrow_row(count: usize, arrows: &[usize], arrow_char: &str) -> Vec<
             is_highlight: false,
             color: BASE_COLOR.to_string(),
             is_arrow: arrows.contains(&i),
+            remembered_price: None,
         })
         .collect()
 }
