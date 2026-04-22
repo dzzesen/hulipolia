@@ -1,11 +1,11 @@
 [application]
-name = "hulipoliya"
+name = "hulipolia"
 default_platform = "web"
 out_dir = "dist"
 asset_dir = "assets"
 
 [web.app]
-title = "Hulipoliya"
+title = "Hulipolia"
 base_path = "/"
 
 [web.watcher]

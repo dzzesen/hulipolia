@@ -12,7 +12,7 @@ use crate::state::{HistorySnapshot, MarketState, PlayerState};
 use serde::{Deserialize, Serialize};
 
 
-const STORAGE_KEY: &str = "hulipoliya_game_state";
+const STORAGE_KEY: &str = "hulipolia_game_state";
 
 #[derive(Serialize, Deserialize, Clone)]
 struct GameState {

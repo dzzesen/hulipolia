@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Hulipoliya** is a web-based board game application built with Dioxus. It's a stock market simulation game where players trade in different markets (Gold, Oil, Nasdaq, Dow Jones, Bonds, Country Stocks) and track their money, credit, and capital.
+**Hulipolia** is a web-based board game application built with Dioxus. It's a stock market simulation game where players trade in different markets (Gold, Oil, Nasdaq, Dow Jones, Bonds, Country Stocks) and track their money, credit, and capital.
 
 ## Technology Stack
 
@@ -17,7 +17,7 @@
 ### Project Structure
 
 ```
-hulipoliya/
+hulipolia/
 ├── Cargo.toml          # Rust dependencies
 ├── Dioxus.toml         # Dioxus configuration
 ├── shell.nix           # Nix shell configuration

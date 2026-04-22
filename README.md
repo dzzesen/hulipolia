@@ -1,8 +1,8 @@
-# Hulipoliya
+# Hulipolia
 
-Hulipoliya is a web-based stock market board game built with Rust and Dioxus. Players track cash, credit, positions, and market movement across six markets: Gold, Oil, Nasdaq, Dow Jones, Bonds, and Country Stocks.
+Hulipolia is a web-based stock market board game built with Rust and Dioxus. Players track cash, credit, positions, and market movement across six markets: Gold, Oil, Nasdaq, Dow Jones, Bonds, and Country Stocks.
 
-![Hulipoliya screenshot](docs/screenshot.png)
+![Hulipolia screenshot](docs/screenshot.png)
 
 ## Stack
 
@@ -89,4 +89,4 @@ Player capital is based on cash, credit, and painted positions.
 
 ## Persistence
 
-Game state is stored in browser local storage under the key `hulipoliya_game_state`. Reset clears the in-browser saved state.
+Game state is stored in browser local storage under the key `hulipolia_game_state`. Reset clears the in-browser saved state.

@@ -1,6 +1,6 @@
-# Hulipoliya Naming Conventions
+# Hulipolia Naming Conventions
 
-This document defines the main concepts and naming conventions used in the Hulipoliya codebase to ensure clarity and consistency when discussing the game's mechanics.
+This document defines the main concepts and naming conventions used in the Hulipolia codebase to ensure clarity and consistency when discussing the game's mechanics.
 
 ## Core Concepts
 
