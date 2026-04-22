@@ -178,7 +178,7 @@ body {
 }
 
 .shift-btn {
-  width: 32px;
+  width: 30px;
   height: 68px;
   border: none;
   border-radius: 4px;
@@ -215,7 +215,8 @@ body {
 }
 
 .market-title {
-  width: 100px;
+  position: relative;
+  width: 140px;
   min-width: 100px;
   flex-shrink: 0;
   height: 68px;
@@ -224,13 +225,41 @@ body {
   color: #ffffff;
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
   border: 2px solid #ffffff;
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 6px 28px 6px 8px;
   box-sizing: border-box;
   text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.market-title-text {
+  line-height: 1.1;
+}
+
+.market-title-action {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 40px;
+  height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.18);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.market-title-action:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .cell {
@@ -308,7 +337,7 @@ body {
 
 
 .price-cell {
-  width: 32px;
+  width: 30px;
   height: 68px;
   border: none;
   border-radius: 4px;

@@ -46,7 +46,7 @@ fn save_to_localstorage(
         player_colors: player_colors.to_vec(),
         markets: markets.to_vec(),
     };
-    
+
     if let Ok(json) = serde_json::to_string(&state) {
         let window = web_sys::window().unwrap();
         let storage = window.local_storage().unwrap().unwrap();
@@ -57,7 +57,7 @@ fn save_to_localstorage(
 fn load_from_localstorage() -> Option<GameState> {
     let window = web_sys::window().unwrap();
     let storage = window.local_storage().unwrap().unwrap();
-    
+
     if let Ok(Some(json)) = storage.get_item(STORAGE_KEY) {
         if let Ok(state) = serde_json::from_str(&json) {
             return Some(state);
@@ -164,6 +164,53 @@ fn apply_money_delta_for_color(
     }
 }
 
+fn market_has_dividend_button(title: &str) -> bool {
+    matches!(title, "Nasdaq" | "Dow Jones" | "Bonds" | "Country Stocks")
+}
+
+fn pay_dividend_for_market(
+    mut player1: Signal<PlayerState>,
+    mut player2: Signal<PlayerState>,
+    mut player3: Signal<PlayerState>,
+    mut player4: Signal<PlayerState>,
+    player_colors: &[String],
+    market: &MarketState,
+) {
+    let payouts: Vec<i32> = player_colors
+        .iter()
+        .map(|color| market.holdings_cells.iter().filter(|cell| cell.color == *color).count() as i32)
+        .collect();
+
+    if let Some(amount) = payouts.first() {
+        player1.with_mut(|player| player.money += *amount);
+    }
+    if let Some(amount) = payouts.get(1) {
+        player2.with_mut(|player| player.money += *amount);
+    }
+    if let Some(amount) = payouts.get(2) {
+        player3.with_mut(|player| player.money += *amount);
+    }
+    if let Some(amount) = payouts.get(3) {
+        player4.with_mut(|player| player.money += *amount);
+    }
+}
+
+fn market_title_label(title: &str) -> Element {
+    match title {
+        "Country Stocks" => rsx! {
+            span { "Country" }
+            br {}
+            span { "Stocks" }
+        },
+        "Dow Jones" => rsx! {
+            span { "Dow" }
+            br {}
+            span { "Jones" }
+        },
+        _ => rsx! { span { "{title}" } },
+    }
+}
+
 fn position_hover_title(cell: &crate::state::CellState, action: &str) -> String {
     match (cell.is_painted(), cell.remembered_price) {
         (true, Some(price)) => format!("{action} at {price}"),
@@ -175,7 +222,7 @@ fn position_hover_title(cell: &crate::state::CellState, action: &str) -> String 
 pub fn App() -> Element {
     // Load from localStorage or use defaults
     let initial_state = load_from_localstorage();
-    
+
     let mut player1 = use_signal(|| {
         initial_state.as_ref().map(|s| s.player1.clone()).unwrap_or_else(|| PlayerState::with_name("Player 1"))
     });
@@ -347,12 +394,28 @@ pub fn App() -> Element {
                     div {
                         class: "market-title",
                         style: "background-color: {markets()[market_idx].bg_color};",
-                        if markets()[market_idx].title == "Country Stocks" {
-                            "Country"
-                            br {}
-                            "Stocks"
-                        } else {
-                            "{markets()[market_idx].title}"
+                        div { class: "market-title-text",
+                            {market_title_label(&markets()[market_idx].title)}
+                        }
+                        if market_has_dividend_button(&markets()[market_idx].title) {
+                            button {
+                                class: "market-title-action",
+                                title: "Pay dividend",
+                                onclick: move |_| {
+                                    push_history();
+                                    let colors = player_colors();
+                                    let current_markets = markets();
+                                    pay_dividend_for_market(
+                                        player1,
+                                        player2,
+                                        player3,
+                                        player4,
+                                        &colors,
+                                        &current_markets[market_idx],
+                                    );
+                                },
+                                "divs"
+                            }
                         }
                     }
 
